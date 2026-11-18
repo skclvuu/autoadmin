@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.env
+*.log
+autoadmin-backend/public/
+.vscode/

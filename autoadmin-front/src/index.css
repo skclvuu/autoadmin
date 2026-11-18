@@ -1,0 +1,33 @@
+:root {
+  /* Modo Claro (Por defecto) */
+  --bg-main: #f4f6f8;
+  --bg-sidebar: #1c2434;
+  --bg-card: #ffffff;
+  --text-main: #1c2434;
+  --text-muted: #64748b;
+  --border-color: #e2e8f0;
+  --hover-sidebar: #333a48;
+}
+
+[data-theme='dark'] {
+  /* Modo Oscuro */
+  --bg-main: #0f172a;       /* Fondo principal oscuro */
+  --bg-sidebar: #020617;    /* Menú lateral más oscuro */
+  --bg-card: #1e293b;       /* Tarjetas oscuras */
+  --text-main: #f8fafc;     /* Texto blanco/gris claro */
+  --text-muted: #94a3b8;    /* Texto secundario */
+  --border-color: #334155;  /* Bordes oscuros */
+  --hover-sidebar: #1e293b;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+* {
+  box-sizing: border-box;
+}
