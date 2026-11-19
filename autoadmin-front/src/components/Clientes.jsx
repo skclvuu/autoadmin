@@ -98,7 +98,7 @@ export default function Clientes() {
   // --- LÓGICA DE FILTRADO Y PAGINACIÓN ---
   // 1. Primero filtramos por el RUT que escribió el usuario
   const clientesFiltrados = clientes.filter(cliente => 
-    cliente.rut.toLowerCase().includes(busquedaRut.toLowerCase())
+    (cliente.rut || '').toLowerCase().includes(busquedaRut.toLowerCase())
   )
 
   // 2. Luego calculamos cuántas páginas necesitamos en total

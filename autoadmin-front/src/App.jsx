@@ -7,17 +7,38 @@ import OrdenesTrabajo from './components/OrdenesTrabajo'
 import Cotizaciones from './components/Cotizaciones'
 import ConsultaPatente from './components/ConsultaPatente'
 import Inventario from './components/Inventario'
+import Login from './components/Login'
 
 function App() {
-  // 1. Estado inicial: Lee la memoria del navegador. Si no hay nada, usa 'Panel principal'
+  // 1. Estado de sesión: Lee el usuario guardado en el navegador
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem('user')
+    return savedUser ? JSON.parse(savedUser) : null
+  })
+
+  // 2. Estado de vista: Lee la última vista activa o usa 'Panel principal'
   const [vistaActual, setVistaActual] = useState(() => {
     return localStorage.getItem('vistaAutoAdmin') || 'Panel principal'
   })
 
-  // 2. Efecto: Cada vez que 'vistaActual' cambia, se guarda en el LocalStorage
+  // 3. Efecto: Guarda 'vistaActual' en LocalStorage cuando cambia
   useEffect(() => {
     localStorage.setItem('vistaAutoAdmin', vistaActual)
   }, [vistaActual])
+
+  // 4. Función para cerrar sesión y limpiar LocalStorage
+  const handleLogout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    localStorage.removeItem('vistaAutoAdmin')
+    setVistaActual('Panel principal')
+    setUser(null)
+  }
+
+  // Si no hay sesión activa, mostrar únicamente la pantalla de Login
+  if (!user) {
+    return <Login onLoginSuccess={setUser} />
+  }
 
   // Vinculamos cada vista con su ícono profesional de Lucide
   const menuItems = [
@@ -76,13 +97,21 @@ function App() {
             </li>
           ))}
 
-          {/* Separador visual antes de los ajustes */}
+          {/* Separador visual antes del usuario y cerrar sesión */}
           <div style={{ height: '1px', backgroundColor: '#334155', margin: '20px 0', marginTop: 'auto' }}></div>
+
+          {/* Info del usuario logueado */}
+          <li style={{ padding: '0 16px 12px', fontSize: '13px', color: '#94a3b8' }}>
+            <div style={{ color: '#f8fafc', fontWeight: '500', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {user.email}
+            </div>
+            <div>{user.rol}</div>
+          </li>
 
           {/* Botón Cerrar sesión */}
           <li>
             <button 
-              onClick={() => setVistaActual('Cerrar sesión')}
+              onClick={handleLogout}
               style={{ 
                 width: '100%', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px',
                 backgroundColor: 'transparent', color: '#ef4444', border: 'none', borderRadius: '8px', 
@@ -98,7 +127,6 @@ function App() {
 
       {/* Área principal */}
       <main style={{ flex: 1, padding: '40px', overflowY: 'auto', color: 'var(--text-main)', transition: 'color 0.3s' }}>
-        
         {vistaActual === 'Panel principal' && <Dashboard setVistaActual={setVistaActual} />}
         {vistaActual === 'Clientes' && <Clientes />}
         {vistaActual === 'Vehículos' && <Vehiculos />}
@@ -106,13 +134,6 @@ function App() {
         {vistaActual === 'Cotizaciones' && <Cotizaciones />}
         {vistaActual === 'Consulta por patente' && <ConsultaPatente />}
         {vistaActual === 'Inventario' && <Inventario />}
-
-        {vistaActual === 'Cerrar sesión' && (
-          <div style={{ textAlign: 'center', marginTop: '100px' }}>
-            <LogOut size={48} color="#ef4444" style={{ marginBottom: '16px' }} />
-            <h2 style={{ fontSize: '24px' }}>Cerrando sesión de AutoAdmin...</h2>
-          </div>
-        )}
       </main>
     </div>
   )
