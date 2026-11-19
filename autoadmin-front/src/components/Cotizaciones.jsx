@@ -162,16 +162,15 @@ export default function Cotizaciones() {
 
   return (
     <>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
-        <p style={{ color: '#64748b', margin: 0 }}>Creación de cotizaciones para servicios y reparaciones del taller</p>
-        <input type="text" placeholder="Buscar patente o cliente..." value={busqueda} onChange={(e) => {setBusqueda(e.target.value); setPaginaActual(1)}} style={{ ...inputStyle, width: '250px', marginTop: 0 }} />
-      </div>
+      <p style={{ color: '#64748b', margin: '0 0 32px 0' }}>
+        Creación de cotizaciones para servicios y reparaciones del taller
+      </p>
       
       <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0', marginBottom: '32px' }}>
         <h3 style={{ margin: '0 0 24px 0', fontSize: '18px' }}>Nueva cotización</h3>
         
         <form onSubmit={guardarCotizacion}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+          <div className="grid-2" style={{ marginBottom: '20px' }}>
             <div>
               <label style={{ fontSize: '14px', fontWeight: '500' }}>Vehículo (Cliente)</label>
               <VehiculoSelect
@@ -214,7 +213,7 @@ export default function Cotizaciones() {
             <textarea name="detalle" value={formulario.detalle} onChange={manejarCambio} rows="4" placeholder="Ej: Se considera cambio de pastillas delanteras..." style={{...inputStyle, resize: 'vertical'}}></textarea>
           </div>
 
-          <div style={{ backgroundColor: '#f8fafc', padding: '20px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="total-box" style={{ backgroundColor: '#f8fafc', padding: '20px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
             <div>
               <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#64748b' }}>Total estimado (IVA Incluido)</h4>
               <p style={{ margin: 0, fontSize: '32px', fontWeight: 'bold', color: '#1e293b' }}>${totalEstimado.toLocaleString('es-CL')}</p>
@@ -232,78 +231,91 @@ export default function Cotizaciones() {
       </div>
 
       <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0' }}>
-        <h3 style={{ margin: '0 0 24px 0', fontSize: '18px' }}>Cotizaciones registradas</h3>
+        <div className="header-flex" style={{ marginBottom: '24px' }}>
+          <h3 style={{ margin: 0, fontSize: '18px' }}>Cotizaciones registradas</h3>
+          <div className="search-box">
+            <input
+              type="text"
+              placeholder="Buscar patente o cliente..."
+              value={busqueda}
+              onChange={(e) => { setBusqueda(e.target.value); setPaginaActual(1) }}
+              style={{ ...inputStyle, marginTop: 0, borderColor: '#38bdf8' }}
+            />
+          </div>
+        </div>
         
         {cargando ? (
           <p style={{ color: '#64748b' }}>Cargando cotizaciones...</p>
         ) : (
           <>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', marginBottom: '24px' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid #f1f5f9', color: '#64748b', fontSize: '14px' }}>
-                  <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Nº</th>
-                  <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Patente</th>
-                  <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Cliente</th>
-                  <th style={{ padding: '0 8px 16px 8px', fontWeight: '600', width: '30%' }}>Detalle</th>
-                  <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Total</th>
-                  <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Estado</th>
-                  <th style={{ padding: '0 8px 16px 8px', fontWeight: '600', width: '120px' }}>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginadas.length > 0 ? paginadas.map((coti) => {
-                  const colores = obtenerColorEstado(coti.estado)
-                  return (
-                    <tr key={coti.id_cotizacion} style={{ borderBottom: '1px solid #f1f5f9', fontSize: '14px', color: '#1e293b' }}>
-                      <td style={{ padding: '16px 8px', fontWeight: '500' }}>#{coti.id_cotizacion}</td>
-                      <td style={{ padding: '16px 8px', fontWeight: '600' }}>{coti.patente}</td>
-                      <td style={{ padding: '16px 8px' }}>{coti.nombre_cliente}</td>
-                      <td style={{ padding: '16px 8px' }}>{coti.detalle}</td>
-                      <td style={{ padding: '16px 8px', fontWeight: '600' }}>{formatearDinero(coti.total)}</td>
-                      
-                      {/* SELECT CAMUFLADO (Se cambia con 1 solo clic) */}
-                      <td style={{ padding: '16px 8px' }}>
-                        <select 
-                          value={coti.estado}
-                          onChange={(e) => cambiarEstadoRapido(coti, e.target.value)}
-                          title="Haz clic para cambiar estado"
-                          style={{ 
-                            backgroundColor: colores.bg, 
-                            color: colores.text, 
-                            padding: '4px 8px', 
-                            borderRadius: '20px', 
-                            border: 'none',
-                            fontSize: '12px', 
-                            fontWeight: '700', 
-                            cursor: 'pointer',
-                            outline: 'none'
-                          }}
-                        >
-                          <option value="Emitida">Emitida</option>
-                          <option value="Aprobada">Aprobada</option>
-                          <option value="Rechazada">Rechazada</option>
-                        </select>
-                      </td>
-                      
-                      {/* BOTONES PEQUEÑOS Y SIN EMOJIS */}
-                      <td style={{ padding: '16px 8px' }}>
-                        <div style={{ display: 'flex', gap: '6px' }}>
-                          <button onClick={() => generarPDF(coti)} title="Generar PDF" style={{ backgroundColor: '#ef4444', color: 'white', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>
-                            PDF
-                          </button>
-                          <button onClick={() => enviarPorCorreo(coti)} title="Enviar por correo" style={{ backgroundColor: '#3b82f6', color: 'white', border: 'none', padding: '8px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>
-                            Email
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                }) : <tr><td colSpan="7" style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>No se encontraron cotizaciones.</td></tr>}
-              </tbody>
-            </table>
+            <div className="table-responsive">
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', marginBottom: '24px' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid #f1f5f9', color: '#64748b', fontSize: '14px' }}>
+                    <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Nº</th>
+                    <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Patente</th>
+                    <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Cliente</th>
+                    <th style={{ padding: '0 8px 16px 8px', fontWeight: '600', width: '30%' }}>Detalle</th>
+                    <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Total</th>
+                    <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Estado</th>
+                    <th style={{ padding: '0 8px 16px 8px', fontWeight: '600', width: '120px' }}>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginadas.length > 0 ? paginadas.map((coti) => {
+                    const colores = obtenerColorEstado(coti.estado)
+                    return (
+                      <tr key={coti.id_cotizacion} style={{ borderBottom: '1px solid #f1f5f9', fontSize: '14px', color: '#1e293b' }}>
+                        <td style={{ padding: '16px 8px', fontWeight: '500' }}>#{coti.id_cotizacion}</td>
+                        <td style={{ padding: '16px 8px', fontWeight: '600' }}>{coti.patente}</td>
+                        <td style={{ padding: '16px 8px' }}>{coti.nombre_cliente}</td>
+                        <td style={{ padding: '16px 8px' }}>{coti.detalle}</td>
+                        <td style={{ padding: '16px 8px', fontWeight: '600' }}>{formatearDinero(coti.total)}</td>
+                        
+                        {/* SELECT CAMUFLADO (Se cambia con 1 solo clic) */}
+                        <td style={{ padding: '16px 8px' }}>
+                          <select 
+                            value={coti.estado}
+                            onChange={(e) => cambiarEstadoRapido(coti, e.target.value)}
+                            title="Haz clic para cambiar estado"
+                            style={{ 
+                              backgroundColor: colores.bg, 
+                              color: colores.text, 
+                              padding: '4px 8px', 
+                              borderRadius: '20px', 
+                              border: 'none',
+                              fontSize: '12px', 
+                              fontWeight: '700', 
+                              cursor: 'pointer',
+                              outline: 'none'
+                            }}
+                          >
+                            <option value="Emitida">Emitida</option>
+                            <option value="Aprobada">Aprobada</option>
+                            <option value="Rechazada">Rechazada</option>
+                          </select>
+                        </td>
+                        
+                        {/* BOTONES PEQUEÑOS Y SIN EMOJIS */}
+                        <td style={{ padding: '16px 8px' }}>
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            <button onClick={() => generarPDF(coti)} title="Generar PDF" style={{ backgroundColor: '#ef4444', color: 'white', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>
+                              PDF
+                            </button>
+                            <button onClick={() => enviarPorCorreo(coti)} title="Enviar por correo" style={{ backgroundColor: '#3b82f6', color: 'white', border: 'none', padding: '8px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>
+                              Email
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  }) : <tr><td colSpan="7" style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>No se encontraron cotizaciones.</td></tr>}
+                </tbody>
+              </table>
+            </div>
             
             {totalPaginas > 1 && (
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 {Array.from({ length: totalPaginas }, (_, i) => i + 1).map(num => (
                   <button key={num} onClick={() => setPaginaActual(num)} style={{ padding: '6px 12px', borderRadius: '6px', border: num === paginaActual ? 'none' : '1px solid #cbd5e1', backgroundColor: num === paginaActual ? '#2563eb' : 'white', color: num === paginaActual ? 'white' : '#1e293b', cursor: 'pointer', fontWeight: '500' }}>
                     {num}

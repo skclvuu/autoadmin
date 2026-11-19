@@ -66,34 +66,13 @@ export default function Login({ onLoginSuccess }) {
         }}
       />
 
-      {/* Tarjeta principal más grande */}
-      <div
-        style={{
-          position: 'relative',
-          zIndex: 1,
-          display: 'flex',
-          width: '100%',
-          maxWidth: '1100px',
-          minHeight: '650px',
-          backgroundColor: '#ffffff',
-          borderRadius: '18px',
-          overflow: 'hidden',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.45)',
-        }}
-      >
+      {/* Tarjeta principal responsive */}
+      <div className="login-card">
         {/* Panel Izquierdo: Foto de taller con tinte + Branding */}
         <div
+          className="login-left"
           style={{
-            position: 'relative',
-            flex: '1 1 50%',
             backgroundImage: `linear-gradient(160deg, rgba(30, 36, 51, 0.82), rgba(37, 99, 235, 0.55)), url(${WORKSHOP_BG})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            padding: '52px 80px 52px 52px',
-            color: '#ffffff',
           }}
         >
           {/* Logo AutoAdmin arriba */}
@@ -131,6 +110,7 @@ export default function Login({ onLoginSuccess }) {
 
           {/* Curva orgánica blanca (S-Wave) separando ambos paneles */}
           <svg
+            className="login-wave"
             viewBox="0 0 100 500"
             preserveAspectRatio="none"
             style={{
@@ -151,16 +131,7 @@ export default function Login({ onLoginSuccess }) {
         </div>
 
         {/* Panel Derecho: Formulario limpio */}
-        <div
-          style={{
-            flex: '1 1 50%',
-            backgroundColor: '#ffffff',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            padding: '64px 64px 64px 40px',
-          }}
-        >
+        <div className="login-right">
           <div style={{ textAlign: 'center', marginBottom: '40px' }}>
             <h1
               style={{

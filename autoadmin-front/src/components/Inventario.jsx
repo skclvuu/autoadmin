@@ -121,9 +121,9 @@ export default function Inventario() {
           <span style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text-muted)', transition: 'transform 0.4s ease', transform: mostrarFormulario ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
         </button>
 
-        <div style={{ maxHeight: mostrarFormulario ? '500px' : '0', opacity: mostrarFormulario ? 1 : 0, overflow: 'hidden', transition: 'max-height 0.4s ease-in-out, opacity 0.4s ease-in-out' }}>
+        <div style={{ maxHeight: mostrarFormulario ? '1000px' : '0', opacity: mostrarFormulario ? 1 : 0, overflow: 'hidden', transition: 'max-height 0.4s ease-in-out, opacity 0.4s ease-in-out' }}>
           <form onSubmit={guardarRepuesto} style={{ padding: '0 24px 24px 24px', borderTop: '1px solid var(--border-color)' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '24px', marginTop: '16px' }}>
+            <div className="grid-3" style={{ marginBottom: '24px', marginTop: '16px' }}>
               <div><label style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-main)' }}>SKU / Código</label><input type="text" name="sku" value={formulario.sku} onChange={manejarCambio} required style={inputStyle} /></div>
               <div><label style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-main)' }}>Nombre</label><input type="text" name="nombre" value={formulario.nombre} onChange={manejarCambio} required style={inputStyle} /></div>
               <div><label style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-main)' }}>Categoría</label><input type="text" name="cat" value={formulario.cat} onChange={manejarCambio} required style={inputStyle} /></div>
@@ -143,66 +143,67 @@ export default function Inventario() {
         {cargando ? (
           <p style={{ color: 'var(--text-muted)' }}>Cargando inventario...</p>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-            <thead>
-              <tr style={{ borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '14px' }}>
-                <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>SKU</th>
-                <th style={{ padding: '0 8px 16px 8px', fontWeight: '600', width: '25%' }}>Repuesto</th>
-                <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Stock</th>
-                <th style={{ padding: '0 8px 16px 8px', fontWeight: '600', width: '10%' }}>Mínimo</th>
-                <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Estado</th>
-                <th style={{ padding: '0 8px 16px 8px', fontWeight: '600', width: '220px' }}>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {inventario.map((item, index) => (
-                <tr key={index} style={{ borderBottom: '1px solid var(--border-color)', fontSize: '14px', color: 'var(--text-main)' }}>
-                  <td style={{ padding: '16px 8px', fontWeight: '500' }}>{item.sku}</td>
-                  
-                  <td style={{ padding: '16px 8px' }}>
-                    {editandoSku === item.sku ? (
-                      <input type="text" value={nombreEditado} onChange={(e) => setNombreEditado(e.target.value)} style={editInputStyle} />
-                    ) : item.nombre}
-                  </td>
-
-                  <td style={{ padding: '16px 8px', fontWeight: 'bold' }}>
-                    {editandoSku === item.sku ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <button onClick={() => setStockEditado(prev => Number(prev) - 1)} style={{ padding: '2px 8px', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>-</button>
-                        <input type="number" value={stockEditado} onChange={(e) => setStockEditado(e.target.value)} style={{ width: '45px', textAlign: 'center', padding: '2px', borderRadius: '4px', border: '1px solid #2563eb', backgroundColor: 'transparent', color: 'var(--text-main)' }} />
-                        <button onClick={() => setStockEditado(prev => Number(prev) + 1)} style={{ padding: '2px 8px', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>+</button>
-                      </div>
-                    ) : item.stock}
-                  </td>
-
-                  <td style={{ padding: '16px 8px' }}>
-                    {editandoSku === item.sku ? (
-                      <input type="number" value={minEditado} onChange={(e) => setMinEditado(e.target.value)} style={editInputStyle} />
-                    ) : item.min}
-                  </td>
-
-                  <td style={{ padding: '16px 8px' }}>
-                    <span style={{ backgroundColor: item.bg, color: item.text, padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '600' }}>{item.estado}</span>
-                  </td>
-                  
-                  <td style={{ padding: '16px 8px' }}>
-                    {editandoSku === item.sku ? (
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <button onClick={() => guardarEdicion(item.sku)} style={{ padding: '6px 10px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>Guardar</button>
-                        <button onClick={cancelarEdicion} style={{ padding: '6px 10px', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>Cancelar</button>
-                        {/* Botón Borrar movido aquí dentro del modo edición */}
-                        <button onClick={() => borrarRepuesto(item.sku)} style={{ padding: '6px 10px', backgroundColor: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>Borrar</button>
-                      </div>
-                    ) : (
-                      <button onClick={() => iniciarEdicion(item)} style={{ backgroundColor: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: '500', transition: 'all 0.2s' }}>
-                        Editar
-                      </button>
-                    )}
-                  </td>
+          <div className="table-responsive">
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '14px' }}>
+                  <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>SKU</th>
+                  <th style={{ padding: '0 8px 16px 8px', fontWeight: '600', width: '25%' }}>Repuesto</th>
+                  <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Stock</th>
+                  <th style={{ padding: '0 8px 16px 8px', fontWeight: '600', width: '10%' }}>Mínimo</th>
+                  <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Estado</th>
+                  <th style={{ padding: '0 8px 16px 8px', fontWeight: '600', width: '220px' }}>Acciones</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {inventario.map((item, index) => (
+                  <tr key={index} style={{ borderBottom: '1px solid var(--border-color)', fontSize: '14px', color: 'var(--text-main)' }}>
+                    <td style={{ padding: '16px 8px', fontWeight: '500' }}>{item.sku}</td>
+                    
+                    <td style={{ padding: '16px 8px' }}>
+                      {editandoSku === item.sku ? (
+                        <input type="text" value={nombreEditado} onChange={(e) => setNombreEditado(e.target.value)} style={editInputStyle} />
+                      ) : item.nombre}
+                    </td>
+
+                    <td style={{ padding: '16px 8px', fontWeight: 'bold' }}>
+                      {editandoSku === item.sku ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <button onClick={() => setStockEditado(prev => Number(prev) - 1)} style={{ padding: '2px 8px', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>-</button>
+                          <input type="number" value={stockEditado} onChange={(e) => setStockEditado(e.target.value)} style={{ width: '45px', textAlign: 'center', padding: '2px', borderRadius: '4px', border: '1px solid #2563eb', backgroundColor: 'transparent', color: 'var(--text-main)' }} />
+                          <button onClick={() => setStockEditado(prev => Number(prev) + 1)} style={{ padding: '2px 8px', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>+</button>
+                        </div>
+                      ) : item.stock}
+                    </td>
+
+                    <td style={{ padding: '16px 8px' }}>
+                      {editandoSku === item.sku ? (
+                        <input type="number" value={minEditado} onChange={(e) => setMinEditado(e.target.value)} style={editInputStyle} />
+                      ) : item.min}
+                    </td>
+
+                    <td style={{ padding: '16px 8px' }}>
+                      <span style={{ backgroundColor: item.bg, color: item.text, padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '600', whiteSpace: 'nowrap' }}>{item.estado}</span>
+                    </td>
+                    
+                    <td style={{ padding: '16px 8px' }}>
+                      {editandoSku === item.sku ? (
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button onClick={() => guardarEdicion(item.sku)} style={{ padding: '6px 10px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>Guardar</button>
+                          <button onClick={cancelarEdicion} style={{ padding: '6px 10px', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>Cancelar</button>
+                          <button onClick={() => borrarRepuesto(item.sku)} style={{ padding: '6px 10px', backgroundColor: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>Borrar</button>
+                        </div>
+                      ) : (
+                        <button onClick={() => iniciarEdicion(item)} style={{ backgroundColor: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: '500', transition: 'all 0.2s' }}>
+                          Editar
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { LayoutDashboard, Users, Car, Wrench, FileText, Search, LogOut, Package } from 'lucide-react'
+import { LayoutDashboard, Users, Car, Wrench, FileText, Search, LogOut, Package, Menu, X } from 'lucide-react'
 import Dashboard from './components/Dashboard'
 import Clientes from './components/Clientes'
 import Vehiculos from './components/Vehiculos'
@@ -21,6 +21,9 @@ function App() {
     return localStorage.getItem('vistaAutoAdmin') || 'Panel principal'
   })
 
+  // Estado del menú móvil
+  const [menuAbierto, setMenuAbierto] = useState(false)
+
   // 3. Efecto: Guarda 'vistaActual' en LocalStorage cuando cambia
   useEffect(() => {
     localStorage.setItem('vistaAutoAdmin', vistaActual)
@@ -32,7 +35,13 @@ function App() {
     localStorage.removeItem('user')
     localStorage.removeItem('vistaAutoAdmin')
     setVistaActual('Panel principal')
+    setMenuAbierto(false)
     setUser(null)
+  }
+
+  const seleccionarVista = (nombre) => {
+    setVistaActual(nombre)
+    setMenuAbierto(false)
   }
 
   // Si no hay sesión activa, mostrar únicamente la pantalla de Login
@@ -52,29 +61,64 @@ function App() {
   ]
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', fontFamily: 'system-ui, -apple-system, sans-serif', backgroundColor: 'var(--bg-main)', textAlign: 'left', transition: 'background-color 0.3s' }}>
+    <div className="app-layout">
       
+      {/* Barra superior solo visible en celular */}
+      <header className="mobile-topbar">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button
+            onClick={() => setMenuAbierto(true)}
+            aria-label="Abrir menú"
+            style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', padding: '4px' }}
+          >
+            <Menu size={24} />
+          </button>
+          <span style={{ fontWeight: '600', fontSize: '16px' }}>{vistaActual}</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div style={{ backgroundColor: '#2563eb', padding: '5px', borderRadius: '6px', display: 'flex' }}>
+            <Wrench size={16} color="white" />
+          </div>
+          <span style={{ fontWeight: '700', fontSize: '15px' }}>AutoAdmin</span>
+        </div>
+      </header>
+
+      {/* Fondo oscuro al abrir el menú en celular */}
+      {menuAbierto && (
+        <div className="sidebar-overlay" onClick={() => setMenuAbierto(false)} />
+      )}
+
       {/* Menú Lateral */}
-      <aside style={{ width: '260px', backgroundColor: 'var(--bg-sidebar)', color: 'white', padding: '24px', display: 'flex', flexDirection: 'column', transition: 'background-color 0.3s' }}>
+      <aside className={`sidebar ${menuAbierto ? 'open' : ''}`}>
         
         {/* Branding AutoAdmin */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '40px' }}>
-          <div style={{ backgroundColor: '#2563eb', padding: '8px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Wrench size={24} color="white" />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '40px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ backgroundColor: '#2563eb', padding: '8px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Wrench size={24} color="white" />
+            </div>
+            <div>
+              <h2 style={{ margin: 0, fontSize: '22px', fontWeight: 'bold', letterSpacing: '-0.5px' }}>AutoAdmin</h2>
+              <span style={{ fontSize: '12px', color: '#94a3b8' }}>Gestión de Taller</span>
+            </div>
           </div>
-          <div>
-            <h2 style={{ margin: 0, fontSize: '22px', fontWeight: 'bold', letterSpacing: '-0.5px' }}>AutoAdmin</h2>
-            <span style={{ fontSize: '12px', color: '#94a3b8' }}>Gestión de Taller</span>
-          </div>
+
+          <button
+            className="sidebar-close-btn"
+            onClick={() => setMenuAbierto(false)}
+            aria-label="Cerrar menú"
+          >
+            <X size={22} />
+          </button>
         </div>
 
         {/* Lista de Navegación */}
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <ul style={{ listStyle: 'none', padding: 0, margin: 0, flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
           
           {menuItems.map((item) => (
             <li key={item.nombre} style={{ marginBottom: '8px' }}>
               <button 
-                onClick={() => setVistaActual(item.nombre)}
+                onClick={() => seleccionarVista(item.nombre)}
                 style={{ 
                   width: '100%', 
                   padding: '12px 16px', 
@@ -126,7 +170,7 @@ function App() {
       </aside>
 
       {/* Área principal */}
-      <main style={{ flex: 1, padding: '40px', overflowY: 'auto', color: 'var(--text-main)', transition: 'color 0.3s' }}>
+      <main className="main-content">
         {vistaActual === 'Panel principal' && <Dashboard setVistaActual={setVistaActual} />}
         {vistaActual === 'Clientes' && <Clientes />}
         {vistaActual === 'Vehículos' && <Vehiculos />}

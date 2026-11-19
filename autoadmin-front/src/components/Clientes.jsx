@@ -96,20 +96,16 @@ export default function Clientes() {
   }
 
   // --- LÓGICA DE FILTRADO Y PAGINACIÓN ---
-  // 1. Primero filtramos por el RUT que escribió el usuario
   const clientesFiltrados = clientes.filter(cliente => 
     (cliente.rut || '').toLowerCase().includes(busquedaRut.toLowerCase())
   )
 
-  // 2. Luego calculamos cuántas páginas necesitamos en total
   const totalPaginas = Math.ceil(clientesFiltrados.length / clientesPorPagina)
 
-  // 3. Cortamos la lista para mostrar solo los 20 de la página actual
   const indiceUltimoCliente = paginaActual * clientesPorPagina
   const indicePrimerCliente = indiceUltimoCliente - clientesPorPagina
   const clientesPaginados = clientesFiltrados.slice(indicePrimerCliente, indiceUltimoCliente)
 
-  // Función para cambiar de página
   const cambiarPagina = (numeroPagina) => {
     setPaginaActual(numeroPagina)
   }
@@ -136,12 +132,27 @@ export default function Clientes() {
       <div style={{ backgroundColor: 'var(--bg-card)', padding: '24px', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', border: '1px solid var(--border-color)', marginBottom: '32px' }}>
         <h3 style={{ margin: '0 0 24px 0', fontSize: '18px', color: 'var(--text-main)' }}>Registrar Nuevo Cliente</h3>
         <form onSubmit={guardarCliente}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '24px' }}>
-            <div><label style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-main)' }}>RUT</label><input type="text" name="rut" value={formulario.rut} onChange={manejarCambio} required placeholder="Ej: 12345678-9" style={inputStyle} /></div>
-            <div><label style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-main)' }}>Nombre Completo</label><input type="text" name="nombre" value={formulario.nombre} onChange={manejarCambio} required style={inputStyle} /></div>
-            <div><label style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-main)' }}>Teléfono</label><input type="text" name="telefono" value={formulario.telefono} onChange={manejarCambio} placeholder="Ej: +569..." style={inputStyle} /></div>
-            <div><label style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-main)' }}>Email</label><input type="email" name="email" value={formulario.email} onChange={manejarCambio} placeholder="correo@ejemplo.com" style={inputStyle} /></div>
-            <div style={{ gridColumn: 'span 2' }}><label style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-main)' }}>Dirección</label><input type="text" name="direccion" value={formulario.direccion} onChange={manejarCambio} placeholder="Calle y comuna" style={inputStyle} /></div>
+          <div className="grid-3" style={{ marginBottom: '24px' }}>
+            <div>
+              <label style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-main)' }}>RUT</label>
+              <input type="text" name="rut" value={formulario.rut} onChange={manejarCambio} required placeholder="Ej: 12345678-9" style={inputStyle} />
+            </div>
+            <div>
+              <label style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-main)' }}>Nombre Completo</label>
+              <input type="text" name="nombre" value={formulario.nombre} onChange={manejarCambio} required style={inputStyle} />
+            </div>
+            <div>
+              <label style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-main)' }}>Teléfono</label>
+              <input type="text" name="telefono" value={formulario.telefono} onChange={manejarCambio} placeholder="Ej: +569..." style={inputStyle} />
+            </div>
+            <div>
+              <label style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-main)' }}>Email</label>
+              <input type="email" name="email" value={formulario.email} onChange={manejarCambio} placeholder="correo@ejemplo.com" style={inputStyle} />
+            </div>
+            <div className="span-2">
+              <label style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-main)' }}>Dirección</label>
+              <input type="text" name="direccion" value={formulario.direccion} onChange={manejarCambio} placeholder="Calle y comuna" style={inputStyle} />
+            </div>
           </div>
           <button type="submit" style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', padding: '10px 24px', borderRadius: '6px', fontWeight: '500', cursor: 'pointer' }}>Guardar Cliente</button>
         </form>
@@ -151,9 +162,9 @@ export default function Clientes() {
       <div style={{ backgroundColor: 'var(--bg-card)', padding: '24px', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', border: '1px solid var(--border-color)' }}>
         
         {/* Cabecera con Buscador */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <div className="header-flex" style={{ marginBottom: '24px' }}>
           <h3 style={{ margin: 0, fontSize: '18px', color: 'var(--text-main)' }}>Directorio de Clientes</h3>
-          <div style={{ width: '300px' }}>
+          <div className="search-box">
             <input 
               type="text" 
               placeholder="Buscar por RUT..." 
@@ -168,63 +179,65 @@ export default function Clientes() {
           <p style={{ color: 'var(--text-muted)' }}>Cargando clientes...</p>
         ) : (
           <>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', marginBottom: '24px' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '14px' }}>
-                  <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>RUT</th>
-                  <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Nombre</th>
-                  <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Teléfono</th>
-                  <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Email</th>
-                  <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Dirección</th>
-                  <th style={{ padding: '0 8px 16px 8px', fontWeight: '600', width: '160px' }}>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {clientesPaginados.length > 0 ? (
-                  clientesPaginados.map((cliente) => (
-                    <tr key={cliente.id_cliente} style={{ borderBottom: '1px solid var(--border-color)', fontSize: '14px', color: 'var(--text-main)' }}>
-                      <td style={{ padding: '16px 8px', fontWeight: '500' }}>
-                        {editandoId === cliente.id_cliente ? <input type="text" name="rut" value={datosEditados.rut} onChange={manejarCambioEdicion} style={editInputStyle} /> : cliente.rut}
-                      </td>
-                      <td style={{ padding: '16px 8px' }}>
-                        {editandoId === cliente.id_cliente ? <input type="text" name="nombre" value={datosEditados.nombre} onChange={manejarCambioEdicion} style={editInputStyle} /> : cliente.nombre}
-                      </td>
-                      <td style={{ padding: '16px 8px' }}>
-                        {editandoId === cliente.id_cliente ? <input type="text" name="telefono" value={datosEditados.telefono} onChange={manejarCambioEdicion} style={editInputStyle} /> : cliente.telefono}
-                      </td>
-                      <td style={{ padding: '16px 8px' }}>
-                        {editandoId === cliente.id_cliente ? <input type="email" name="email" value={datosEditados.email} onChange={manejarCambioEdicion} style={editInputStyle} /> : cliente.email}
-                      </td>
-                      <td style={{ padding: '16px 8px' }}>
-                        {editandoId === cliente.id_cliente ? <input type="text" name="direccion" value={datosEditados.direccion} onChange={manejarCambioEdicion} style={editInputStyle} /> : cliente.direccion}
-                      </td>
-                      <td style={{ padding: '16px 8px' }}>
-                        {editandoId === cliente.id_cliente ? (
-                          <div style={{ display: 'flex', gap: '6px' }}>
-                            <button onClick={() => guardarEdicion(cliente.id_cliente)} style={{ padding: '6px 10px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>Guardar</button>
-                            <button onClick={cancelarEdicion} style={{ padding: '6px 10px', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>Cancelar</button>
-                          </div>
-                        ) : (
-                          <button onClick={() => iniciarEdicion(cliente)} style={{ backgroundColor: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: '500' }}>
-                            Editar
-                          </button>
-                        )}
+            <div className="table-responsive">
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', marginBottom: '24px' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '14px' }}>
+                    <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>RUT</th>
+                    <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Nombre</th>
+                    <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Teléfono</th>
+                    <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Email</th>
+                    <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Dirección</th>
+                    <th style={{ padding: '0 8px 16px 8px', fontWeight: '600', width: '160px' }}>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {clientesPaginados.length > 0 ? (
+                    clientesPaginados.map((cliente) => (
+                      <tr key={cliente.id_cliente} style={{ borderBottom: '1px solid var(--border-color)', fontSize: '14px', color: 'var(--text-main)' }}>
+                        <td style={{ padding: '16px 8px', fontWeight: '500' }}>
+                          {editandoId === cliente.id_cliente ? <input type="text" name="rut" value={datosEditados.rut} onChange={manejarCambioEdicion} style={editInputStyle} /> : cliente.rut}
+                        </td>
+                        <td style={{ padding: '16px 8px' }}>
+                          {editandoId === cliente.id_cliente ? <input type="text" name="nombre" value={datosEditados.nombre} onChange={manejarCambioEdicion} style={editInputStyle} /> : cliente.nombre}
+                        </td>
+                        <td style={{ padding: '16px 8px' }}>
+                          {editandoId === cliente.id_cliente ? <input type="text" name="telefono" value={datosEditados.telefono} onChange={manejarCambioEdicion} style={editInputStyle} /> : cliente.telefono}
+                        </td>
+                        <td style={{ padding: '16px 8px' }}>
+                          {editandoId === cliente.id_cliente ? <input type="email" name="email" value={datosEditados.email} onChange={manejarCambioEdicion} style={editInputStyle} /> : cliente.email}
+                        </td>
+                        <td style={{ padding: '16px 8px' }}>
+                          {editandoId === cliente.id_cliente ? <input type="text" name="direccion" value={datosEditados.direccion} onChange={manejarCambioEdicion} style={editInputStyle} /> : cliente.direccion}
+                        </td>
+                        <td style={{ padding: '16px 8px' }}>
+                          {editandoId === cliente.id_cliente ? (
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              <button onClick={() => guardarEdicion(cliente.id_cliente)} style={{ padding: '6px 10px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>Guardar</button>
+                              <button onClick={cancelarEdicion} style={{ padding: '6px 10px', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>Cancelar</button>
+                            </div>
+                          ) : (
+                            <button onClick={() => iniciarEdicion(cliente)} style={{ backgroundColor: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: '500' }}>
+                              Editar
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="6" style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                        No se encontraron clientes con ese RUT.
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="6" style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                      No se encontraron clientes con ese RUT.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  )}
+                </tbody>
+              </table>
+            </div>
 
             {/* Paginación UI */}
             {totalPaginas > 1 && (
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 {Array.from({ length: totalPaginas }, (_, index) => index + 1).map(numero => (
                   <button
                     key={numero}

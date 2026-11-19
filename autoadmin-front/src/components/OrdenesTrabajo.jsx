@@ -142,7 +142,7 @@ export default function OrdenesTrabajo() {
       <div style={{ backgroundColor: 'var(--bg-card)', padding: '24px', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', border: '1px solid var(--border-color)', marginBottom: '32px' }}>
         <h3 style={{ margin: '0 0 24px 0', fontSize: '18px', color: 'var(--text-main)' }}>Ingresar Orden de Trabajo</h3>
         <form onSubmit={guardarOrden}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr', gap: '20px', marginBottom: '24px' }}>
+          <div className="grid-1-2-1" style={{ marginBottom: '24px' }}>
             <div>
               <label style={{ fontSize: '14px', fontWeight: '500' }}>Vehículo</label>
               <VehiculoSelect
@@ -173,8 +173,8 @@ export default function OrdenesTrabajo() {
       <div style={{ backgroundColor: 'var(--bg-card)', padding: '24px', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', border: '1px solid var(--border-color)' }}>
         
         {/* Selector de Pestañas y Buscador */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid var(--border-color)' }}>
-          <div style={{ display: 'flex', gap: '8px' }}>
+        <div className="header-flex" style={{ marginBottom: '24px', borderBottom: '1px solid var(--border-color)' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             <button 
               onClick={() => { setVistaActiva('activas'); setPaginaActual(1); }} 
               style={tabStyle(vistaActiva === 'activas')}
@@ -189,13 +189,13 @@ export default function OrdenesTrabajo() {
             </button>
           </div>
           
-          <div style={{ paddingBottom: '10px' }}>
+          <div className="search-box" style={{ paddingBottom: '10px' }}>
             <input 
               type="text" 
               placeholder="Buscar patente o cliente..." 
               value={busqueda} 
               onChange={(e) => {setBusqueda(e.target.value); setPaginaActual(1)}} 
-              style={{ ...inputStyle, width: '250px', marginTop: 0 }} 
+              style={{ ...inputStyle, marginTop: 0 }} 
             />
           </div>
         </div>
@@ -204,71 +204,73 @@ export default function OrdenesTrabajo() {
           <p style={{ color: 'var(--text-muted)' }}>Cargando órdenes...</p>
         ) : (
           <>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', marginBottom: '24px' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '14px' }}>
-                  <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>N° Orden</th>
-                  <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Vehículo / Cliente</th>
-                  <th style={{ padding: '0 8px 16px 8px', fontWeight: '600', width: '30%' }}>Detalle Falla</th>
-                  <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Total ($)</th>
-                  <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Estado</th>
-                  <th style={{ padding: '0 8px 16px 8px', fontWeight: '600', width: '160px' }}>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ordenesPaginadas.length > 0 ? (
-                  ordenesPaginadas.map((orden) => {
-                    const colores = obtenerColorEstado(orden.estado)
-                    return (
-                      <tr key={orden.id_orden} style={{ borderBottom: '1px solid var(--border-color)', fontSize: '14px' }}>
-                        <td style={{ padding: '16px 8px', fontWeight: 'bold' }}>#{orden.id_orden}</td>
-                        <td style={{ padding: '16px 8px' }}>
-                          <div style={{ fontWeight: '500' }}>{orden.patente}</div>
-                          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{orden.nombre_cliente}</div>
-                        </td>
-                        <td style={{ padding: '16px 8px' }}>
-                          {editandoId === orden.id_orden ? <input type="text" name="descripcion_falla" value={datosEditados.descripcion_falla} onChange={manejarCambioEdicion} style={editInputStyle} /> : orden.descripcion_falla}
-                        </td>
-                        <td style={{ padding: '16px 8px', fontWeight: '500' }}>
-                          {editandoId === orden.id_orden ? <input type="number" name="total_estimado" value={datosEditados.total_estimado} onChange={manejarCambioEdicion} style={editInputStyle} /> : formatearDinero(orden.total_estimado)}
-                        </td>
-                        <td style={{ padding: '16px 8px' }}>
-                          {editandoId === orden.id_orden ? (
-                            <select name="estado" value={datosEditados.estado} onChange={manejarCambioEdicion} style={editInputStyle}>
-                              <option value="Pendiente">Pendiente</option>
-                              <option value="En Proceso">En Proceso</option>
-                              <option value="Terminado">Terminado</option>
-                            </select>
-                          ) : (
-                            <span style={{ backgroundColor: colores.bg, color: colores.text, padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '600' }}>{orden.estado}</span>
-                          )}
-                        </td>
-                        <td style={{ padding: '16px 8px' }}>
-                          {editandoId === orden.id_orden ? (
-                            <div style={{ display: 'flex', gap: '6px' }}>
-                              <button onClick={() => guardarEdicion(orden.id_orden)} style={{ padding: '6px 10px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>Guardar</button>
-                              <button onClick={() => setEditandoId(null)} style={{ padding: '6px 10px', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>Cancelar</button>
-                            </div>
-                          ) : (
-                            <button onClick={() => iniciarEdicion(orden)} style={{ backgroundColor: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: '500' }}>Editar</button>
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan="6" style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                      No hay órdenes en esta categoría.
-                    </td>
+            <div className="table-responsive">
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', marginBottom: '24px' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '14px' }}>
+                    <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>N° Orden</th>
+                    <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Vehículo / Cliente</th>
+                    <th style={{ padding: '0 8px 16px 8px', fontWeight: '600', width: '30%' }}>Detalle Falla</th>
+                    <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Total ($)</th>
+                    <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Estado</th>
+                    <th style={{ padding: '0 8px 16px 8px', fontWeight: '600', width: '160px' }}>Acciones</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {ordenesPaginadas.length > 0 ? (
+                    ordenesPaginadas.map((orden) => {
+                      const colores = obtenerColorEstado(orden.estado)
+                      return (
+                        <tr key={orden.id_orden} style={{ borderBottom: '1px solid var(--border-color)', fontSize: '14px' }}>
+                          <td style={{ padding: '16px 8px', fontWeight: 'bold' }}>#{orden.id_orden}</td>
+                          <td style={{ padding: '16px 8px' }}>
+                            <div style={{ fontWeight: '500' }}>{orden.patente}</div>
+                            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{orden.nombre_cliente}</div>
+                          </td>
+                          <td style={{ padding: '16px 8px' }}>
+                            {editandoId === orden.id_orden ? <input type="text" name="descripcion_falla" value={datosEditados.descripcion_falla} onChange={manejarCambioEdicion} style={editInputStyle} /> : orden.descripcion_falla}
+                          </td>
+                          <td style={{ padding: '16px 8px', fontWeight: '500' }}>
+                            {editandoId === orden.id_orden ? <input type="number" name="total_estimado" value={datosEditados.total_estimado} onChange={manejarCambioEdicion} style={editInputStyle} /> : formatearDinero(orden.total_estimado)}
+                          </td>
+                          <td style={{ padding: '16px 8px' }}>
+                            {editandoId === orden.id_orden ? (
+                              <select name="estado" value={datosEditados.estado} onChange={manejarCambioEdicion} style={editInputStyle}>
+                                <option value="Pendiente">Pendiente</option>
+                                <option value="En Proceso">En Proceso</option>
+                                <option value="Terminado">Terminado</option>
+                              </select>
+                            ) : (
+                              <span style={{ backgroundColor: colores.bg, color: colores.text, padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '600', whiteSpace: 'nowrap' }}>{orden.estado}</span>
+                            )}
+                          </td>
+                          <td style={{ padding: '16px 8px' }}>
+                            {editandoId === orden.id_orden ? (
+                              <div style={{ display: 'flex', gap: '6px' }}>
+                                <button onClick={() => guardarEdicion(orden.id_orden)} style={{ padding: '6px 10px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>Guardar</button>
+                                <button onClick={() => setEditandoId(null)} style={{ padding: '6px 10px', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>Cancelar</button>
+                              </div>
+                            ) : (
+                              <button onClick={() => iniciarEdicion(orden)} style={{ backgroundColor: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: '500' }}>Editar</button>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan="6" style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                        No hay órdenes en esta categoría.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
 
             {/* Paginación */}
             {totalPaginas > 1 && (
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 {Array.from({ length: totalPaginas }, (_, i) => i + 1).map(num => (
                   <button key={num} onClick={() => setPaginaActual(num)} style={{ padding: '6px 12px', borderRadius: '6px', border: num === paginaActual ? 'none' : '1px solid var(--border-color)', backgroundColor: num === paginaActual ? '#2563eb' : 'transparent', color: num === paginaActual ? 'white' : 'var(--text-main)', cursor: 'pointer', fontWeight: '500' }}>
                     {num}

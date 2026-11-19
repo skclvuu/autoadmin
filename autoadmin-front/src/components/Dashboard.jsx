@@ -65,7 +65,7 @@ export default function Dashboard({ setVistaActual }) {
       <p style={{ color: 'var(--text-muted)', margin: '0 0 32px 0' }}>Resumen general del taller mecánico</p>
 
       {/* MÉTRICAS SUPERIORES */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '32px' }}>
+      <div className="grid-4" style={{ marginBottom: '32px' }}>
         
         <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', border: '1px solid #e5e7eb', borderLeft: '4px solid #64748b' }}>
           <p style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Vehículos</p>
@@ -90,49 +90,51 @@ export default function Dashboard({ setVistaActual }) {
       </div>
 
       {/* CONTENIDO INFERIOR A DOS COLUMNAS */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
+      <div className="grid-2-1">
         
         {/* COLUMNA IZQUIERDA: Tabla de Órdenes Recientes */}
-        <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', border: '1px solid #e5e7eb' }}>
+        <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', border: '1px solid #e5e7eb', minWidth: 0 }}>
           <h3 style={{ margin: '0 0 20px 0', fontSize: '18px', color: '#0f172a' }}>Órdenes Recientes</h3>
           {stats.recientes?.length > 0 ? (
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid #e5e7eb', color: '#64748b', fontSize: '14px' }}>
-                  <th style={{ padding: '0 8px 12px 0', fontWeight: '600' }}>ID</th>
-                  <th style={{ padding: '0 8px 12px 8px', fontWeight: '600' }}>Vehículo</th>
-                  <th style={{ padding: '0 8px 12px 8px', fontWeight: '600' }}>Cliente</th>
-                  <th style={{ padding: '0 8px 12px 8px', fontWeight: '600' }}>Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stats.recientes.map((orden) => {
-                  const badge = getBadgeStyle(orden.estado);
-                  return (
-                    <tr key={orden.id_orden} style={{ borderBottom: '1px solid #f1f5f9', fontSize: '14px' }}>
-                      <td style={{ padding: '16px 8px 16px 0', fontWeight: '600', color: '#3b82f6' }}>#{orden.id_orden}</td>
-                      <td style={{ padding: '16px 8px', fontWeight: '600' }}>{orden.patente}</td>
-                      <td style={{ padding: '16px 8px', color: '#475569' }}>{orden.cliente}</td>
-                      <td style={{ padding: '16px 8px' }}>
-                        <span style={{ 
-                          backgroundColor: badge.bg, color: badge.text, 
-                          padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '700' 
-                        }}>
-                          {orden.estado}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <div className="table-responsive">
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid #e5e7eb', color: '#64748b', fontSize: '14px' }}>
+                    <th style={{ padding: '0 8px 12px 0', fontWeight: '600' }}>ID</th>
+                    <th style={{ padding: '0 8px 12px 8px', fontWeight: '600' }}>Vehículo</th>
+                    <th style={{ padding: '0 8px 12px 8px', fontWeight: '600' }}>Cliente</th>
+                    <th style={{ padding: '0 8px 12px 8px', fontWeight: '600' }}>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.recientes.map((orden) => {
+                    const badge = getBadgeStyle(orden.estado);
+                    return (
+                      <tr key={orden.id_orden} style={{ borderBottom: '1px solid #f1f5f9', fontSize: '14px' }}>
+                        <td style={{ padding: '16px 8px 16px 0', fontWeight: '600', color: '#3b82f6' }}>#{orden.id_orden}</td>
+                        <td style={{ padding: '16px 8px', fontWeight: '600' }}>{orden.patente}</td>
+                        <td style={{ padding: '16px 8px', color: '#475569' }}>{orden.cliente}</td>
+                        <td style={{ padding: '16px 8px' }}>
+                          <span style={{ 
+                            backgroundColor: badge.bg, color: badge.text, 
+                            padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '700', whiteSpace: 'nowrap'
+                          }}>
+                            {orden.estado}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           ) : (
             <p style={{ color: '#64748b', textAlign: 'center', padding: '20px' }}>No hay órdenes activas registradas.</p>
           )}
         </div>
 
         {/* COLUMNA DERECHA: Agrupa Flujo de Trabajo y Alertas de Stock */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', minWidth: 0 }}>
           
           {/* Tarjeta 1: Flujo de Trabajo */}
           <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', border: '1px solid #e5e7eb' }}>
@@ -171,7 +173,7 @@ export default function Dashboard({ setVistaActual }) {
 
           {/* Tarjeta 2: Alertas de Stock Dinámicas */}
           <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', border: '1px solid #e5e7eb' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
               
               <h3 
                 onClick={() => {
