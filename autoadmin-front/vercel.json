@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://autoadmin-w543.onrender.com/api/:path*"
+    }
+  ]
+}
