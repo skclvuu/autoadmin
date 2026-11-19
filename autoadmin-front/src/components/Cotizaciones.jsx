@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import VehiculoSelect from './VehiculoSelect'
 
 export default function Cotizaciones() {
   const [cotizaciones, setCotizaciones] = useState([])
@@ -173,10 +174,16 @@ export default function Cotizaciones() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
             <div>
               <label style={{ fontSize: '14px', fontWeight: '500' }}>Vehículo (Cliente)</label>
-              <select name="id_vehiculo" value={formulario.id_vehiculo} onChange={manejarCambio} required style={inputStyle}>
-                <option value="">Seleccione un vehículo</option>
-                {vehiculos.map(v => <option key={v.id_vehiculo} value={v.id_vehiculo}>{v.patente} - {v.nombre_cliente}</option>)}
-              </select>
+              <VehiculoSelect
+                name="id_vehiculo"
+                vehiculos={vehiculos}
+                value={formulario.id_vehiculo}
+                onChange={manejarCambio}
+                required
+                style={inputStyle}
+                placeholder="Seleccione un vehículo..."
+                formato={(v) => `${v.patente} - ${v.nombre_cliente}`}
+              />
             </div>
             <div>
               <label style={{ fontSize: '14px', fontWeight: '500' }}>Fecha de cotización</label>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import VehiculoSelect from './VehiculoSelect'
 
 export default function OrdenesTrabajo() {
   const [ordenes, setOrdenes] = useState([])
@@ -16,7 +17,6 @@ export default function OrdenesTrabajo() {
 
   const [busqueda, setBusqueda] = useState('')
   const [paginaActual, setPaginaActual] = useState(1)
-  // NUEVO ESTADO: Controla qué pestaña estamos viendo
   const [vistaActiva, setVistaActiva] = useState('activas') // 'activas' o 'historial'
   const ordenesPorPagina = 20
 
@@ -59,7 +59,6 @@ export default function OrdenesTrabajo() {
       if (respuesta.ok) {
         setFormulario({ id_vehiculo: '', descripcion_falla: '', total_estimado: '' })
         cargarDatos()
-        // Si creas una nueva, te lleva a la vista de activas automáticamente
         setVistaActiva('activas')
       }
     } catch (error) {
@@ -93,14 +92,11 @@ export default function OrdenesTrabajo() {
   }
 
   // --- LÓGICA DE PESTAÑAS, FILTRADO Y PAGINACIÓN ---
-  
-  // 1. Primero filtramos por la pestaña seleccionada (Activas vs Terminadas)
   const ordenesPorPestana = ordenes.filter(orden => {
     if (vistaActiva === 'activas') return orden.estado !== 'Terminado';
     return orden.estado === 'Terminado';
   });
 
-  // 2. Luego aplicamos el buscador sobre esa lista
   const ordenesFiltradas = ordenesPorPestana.filter(orden => 
     orden.patente.toLowerCase().includes(busqueda.toLowerCase()) ||
     orden.estado.toLowerCase().includes(busqueda.toLowerCase()) ||
@@ -126,7 +122,6 @@ export default function OrdenesTrabajo() {
   const inputStyle = { width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', marginTop: '6px', fontSize: '14px', fontFamily: 'inherit', color: 'var(--text-main)', backgroundColor: 'transparent', boxSizing: 'border-box' }
   const editInputStyle = { ...inputStyle, padding: '4px 8px', marginTop: '0', border: '1px solid #2563eb' }
 
-  // Estilo base para los botones de las pestañas
   const tabStyle = (isActive) => ({
     padding: '10px 20px',
     border: 'none',
@@ -150,12 +145,16 @@ export default function OrdenesTrabajo() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr', gap: '20px', marginBottom: '24px' }}>
             <div>
               <label style={{ fontSize: '14px', fontWeight: '500' }}>Vehículo</label>
-              <select name="id_vehiculo" value={formulario.id_vehiculo} onChange={manejarCambio} required style={inputStyle}>
-                <option value="">Seleccione patente...</option>
-                {vehiculos.map(v => (
-                  <option key={v.id_vehiculo} value={v.id_vehiculo}>{v.patente} - {v.marca} {v.modelo}</option>
-                ))}
-              </select>
+              <VehiculoSelect
+                name="id_vehiculo"
+                vehiculos={vehiculos}
+                value={formulario.id_vehiculo}
+                onChange={manejarCambio}
+                required
+                style={inputStyle}
+                placeholder="Seleccione patente..."
+                formato={(v) => `${v.patente} - ${v.marca} ${v.modelo}`}
+              />
             </div>
             <div>
               <label style={{ fontSize: '14px', fontWeight: '500' }}>Falla Reportada</label>
