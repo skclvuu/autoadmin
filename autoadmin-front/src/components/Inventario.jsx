@@ -10,9 +10,9 @@ export default function Inventario() {
   })
 
   const [editandoSku, setEditandoSku] = useState(null)
-  const [stockEditado, setStockEditado] = useState('')
   const [nombreEditado, setNombreEditado] = useState('')
   const [minEditado, setMinEditado] = useState('')
+  const [ubiEditada, setUbiEditada] = useState('')
 
   const cargarInventario = () => {
     fetch('/api/inventario')
@@ -50,26 +50,69 @@ export default function Inventario() {
     }
   }
 
+  // Actualización rápida de stock sin necesidad de abrir "Editar"
+  const actualizarStockRapido = async (item, nuevoStock) => {
+    const stockFinal = Math.max(0, Number(nuevoStock) || 0)
+
+    // Actualización inmediata en pantalla
+    setInventario(prev =>
+      prev.map(i => {
+        if (i.sku !== item.sku) return i
+        const esCritico = stockFinal <= i.min
+        return {
+          ...i,
+          stock: stockFinal,
+          estado: esCritico ? 'CRÍTICO' : 'OK',
+          bg: esCritico ? '#fee2e2' : '#dcfce3',
+          text: esCritico ? '#b91c1c' : '#15803d'
+        }
+      })
+    )
+
+    try {
+      await fetch(`/api/inventario/${item.sku}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre: item.nombre,
+          stock_actual: stockFinal,
+          stock_minimo: item.min,
+          ubicacion: item.ubi || item.ubicacion || 'Bodega General'
+        })
+      })
+    } catch (error) {
+      console.error('Error al actualizar stock:', error)
+      cargarInventario()
+    }
+  }
+
+  const manejarCambioInputStock = (sku, valor) => {
+    setInventario(prev =>
+      prev.map(i => (i.sku === sku ? { ...i, stock: valor } : i))
+    )
+  }
+
   const iniciarEdicion = (item) => {
     setEditandoSku(item.sku)
-    setStockEditado(item.stock)
     setNombreEditado(item.nombre)
     setMinEditado(item.min)
+    setUbiEditada(item.ubi || item.ubicacion || '')
   }
 
   const cancelarEdicion = () => {
     setEditandoSku(null)
   }
 
-  const guardarEdicion = async (sku) => {
+  const guardarEdicion = async (item) => {
     try {
-      const respuesta = await fetch(`/api/inventario/${sku}`, {
+      const respuesta = await fetch(`/api/inventario/${item.sku}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           nombre: nombreEditado, 
-          stock_actual: stockEditado, 
-          stock_minimo: minEditado 
+          stock_actual: Number(item.stock) || 0, 
+          stock_minimo: minEditado,
+          ubicacion: ubiEditada
         })
       })
       if (respuesta.ok) {
@@ -148,7 +191,8 @@ export default function Inventario() {
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '14px' }}>
                   <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>SKU</th>
-                  <th style={{ padding: '0 8px 16px 8px', fontWeight: '600', width: '25%' }}>Repuesto</th>
+                  <th style={{ padding: '0 8px 16px 8px', fontWeight: '600', width: '22%' }}>Repuesto</th>
+                  <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Ubicación</th>
                   <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Stock</th>
                   <th style={{ padding: '0 8px 16px 8px', fontWeight: '600', width: '10%' }}>Mínimo</th>
                   <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Estado</th>
@@ -166,14 +210,43 @@ export default function Inventario() {
                       ) : item.nombre}
                     </td>
 
-                    <td style={{ padding: '16px 8px', fontWeight: 'bold' }}>
+                    <td style={{ padding: '16px 8px' }}>
                       {editandoSku === item.sku ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <button onClick={() => setStockEditado(prev => Number(prev) - 1)} style={{ padding: '2px 8px', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>-</button>
-                          <input type="number" value={stockEditado} onChange={(e) => setStockEditado(e.target.value)} style={{ width: '45px', textAlign: 'center', padding: '2px', borderRadius: '4px', border: '1px solid #2563eb', backgroundColor: 'transparent', color: 'var(--text-main)' }} />
-                          <button onClick={() => setStockEditado(prev => Number(prev) + 1)} style={{ padding: '2px 8px', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>+</button>
-                        </div>
-                      ) : item.stock}
+                        <input type="text" value={ubiEditada} onChange={(e) => setUbiEditada(e.target.value)} style={editInputStyle} />
+                      ) : (item.ubi || item.ubicacion || '-')}
+                    </td>
+
+                    {/* STOCK SIEMPRE EDITABLE */}
+                    <td style={{ padding: '16px 8px', fontWeight: 'bold' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <button
+                          type="button"
+                          onClick={() => actualizarStockRapido(item, Number(item.stock) - 1)}
+                          style={{ padding: '2px 8px', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                        >
+                          -
+                        </button>
+                        <input
+                          type="number"
+                          min="0"
+                          value={item.stock}
+                          onChange={(e) => manejarCambioInputStock(item.sku, e.target.value)}
+                          onBlur={(e) => actualizarStockRapido(item, e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.target.blur()
+                            }
+                          }}
+                          style={{ width: '50px', textAlign: 'center', padding: '4px 2px', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'transparent', color: 'var(--text-main)', fontWeight: 'bold' }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => actualizarStockRapido(item, Number(item.stock) + 1)}
+                          style={{ padding: '2px 8px', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                        >
+                          +
+                        </button>
+                      </div>
                     </td>
 
                     <td style={{ padding: '16px 8px' }}>
@@ -189,7 +262,7 @@ export default function Inventario() {
                     <td style={{ padding: '16px 8px' }}>
                       {editandoSku === item.sku ? (
                         <div style={{ display: 'flex', gap: '6px' }}>
-                          <button onClick={() => guardarEdicion(item.sku)} style={{ padding: '6px 10px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>Guardar</button>
+                          <button onClick={() => guardarEdicion(item)} style={{ padding: '6px 10px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>Guardar</button>
                           <button onClick={cancelarEdicion} style={{ padding: '6px 10px', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>Cancelar</button>
                           <button onClick={() => borrarRepuesto(item.sku)} style={{ padding: '6px 10px', backgroundColor: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>Borrar</button>
                         </div>

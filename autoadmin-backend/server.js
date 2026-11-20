@@ -25,6 +25,18 @@ app.get('/api/test-db', async (req, res) => {
   }
 });
 
+app.get('/api/mecanicos', async (req, res) => {
+  try {
+    const result = await db.query(
+      'SELECT id_mecanico, nombre FROM mecanico WHERE activo = true ORDER BY nombre ASC'
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error al obtener mecánicos:', error);
+    res.status(500).json({ error: 'Error al obtener mecánicos' });
+  }
+});
+
 // ==========================================
 // RUTAS DEL MÓDULO DE INVENTARIO (REPUESTOS)
 // ==========================================
@@ -42,7 +54,7 @@ app.get('/api/inventario', async (req, res) => {
         sku: item.codigo,
         nombre: item.nombre,
         cat: 'N/A', // Omitido del nuevo diagrama lógico
-        ubi: 'N/A', // Omitido del nuevo diagrama lógico
+        ubi: item.ubicacion || 'Sin ubicación',
         stock: stock,
         min: min,
         estado: esCritico ? 'CRÍTICO' : 'OK',
@@ -60,12 +72,12 @@ app.get('/api/inventario', async (req, res) => {
 
 app.post('/api/inventario', async (req, res) => {
   try {
-    const { sku, nombre, stock, min } = req.body;
+    const { sku, nombre, stock, min, ubi, ubicacion } = req.body;
     const query = `
-      INSERT INTO repuesto (codigo, nombre, stock_actual, stock_minimo) 
-      VALUES ($1, $2, $3, $4)
+      INSERT INTO repuesto (codigo, nombre, stock_actual, stock_minimo, ubicacion) 
+      VALUES ($1, $2, $3, $4, $5)
     `;
-    await db.query(query, [sku, nombre, stock, min]);
+    await db.query(query, [sku, nombre, stock, min, ubi || ubicacion || 'Bodega General']);
     res.status(201).json({ mensaje: 'Repuesto guardado exitosamente' });
   } catch (error) {
     console.error('Error al guardar el repuesto:', error);
@@ -76,9 +88,13 @@ app.post('/api/inventario', async (req, res) => {
 app.put('/api/inventario/:sku', async (req, res) => {
   try {
     const { sku } = req.params;
-    const { nombre, stock_actual, stock_minimo } = req.body;
-    const query = 'UPDATE repuesto SET nombre = $1, stock_actual = $2, stock_minimo = $3 WHERE codigo = $4';
-    await db.query(query, [nombre, stock_actual, stock_minimo, sku]);
+    const { nombre, stock_actual, stock_minimo, ubicacion, ubi } = req.body;
+    const query = `
+      UPDATE repuesto 
+      SET nombre = $1, stock_actual = $2, stock_minimo = $3, ubicacion = $4 
+      WHERE codigo = $5
+    `;
+    await db.query(query, [nombre, stock_actual, stock_minimo, ubicacion || ubi || 'Bodega General', sku]);
     res.json({ mensaje: 'Repuesto actualizado correctamente' });
   } catch (error) {
     console.error('Error actualizando:', error);
@@ -221,26 +237,33 @@ app.get('/api/ordenes', async (req, res) => {
   try {
     const query = `
       SELECT o.id_ot as id_orden, o.fecha_ingreso, o.diagnostico as descripcion_falla, o.estado, o.total_estimado,
+             o.id_mecanico, m.nombre as nombre_mecanico,
              v.patente, c.nombre_razon_social as nombre_cliente
       FROM orden_trabajo o
       JOIN vehiculo v ON o.id_vehiculo = v.id_vehiculo
       JOIN cliente c ON v.id_cliente = c.id_cliente
+      LEFT JOIN mecanico m ON o.id_mecanico = m.id_mecanico
       ORDER BY o.id_ot DESC
     `;
     const result = await db.query(query);
     res.json(result.rows);
   } catch (error) {
+    console.error('Error obteniendo órdenes:', error);
     res.status(500).json({ error: 'Error obteniendo órdenes' });
   }
 });
 
 app.post('/api/ordenes', async (req, res) => {
   try {
-    const { id_vehiculo, descripcion_falla, total_estimado } = req.body;
-    const query = 'INSERT INTO orden_trabajo (id_vehiculo, diagnostico, total_estimado, creado_por) VALUES ($1, $2, $3, 1)';
-    await db.query(query, [id_vehiculo, descripcion_falla, total_estimado || 0]);
+    const { id_vehiculo, id_mecanico, descripcion_falla, total_estimado } = req.body;
+    const query = `
+      INSERT INTO orden_trabajo (id_vehiculo, id_mecanico, diagnostico, total_estimado, creado_por)
+      VALUES ($1, $2, $3, $4, 1)
+    `;
+    await db.query(query, [id_vehiculo, id_mecanico || null, descripcion_falla, total_estimado || 0]);
     res.status(201).json({ mensaje: 'Orden creada exitosamente' });
   } catch (error) {
+    console.error('Error al guardar orden:', error);
     res.status(500).json({ error: 'Error al guardar orden' });
   }
 });
@@ -248,15 +271,15 @@ app.post('/api/ordenes', async (req, res) => {
 app.put('/api/ordenes/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { descripcion_falla, estado, total_estimado } = req.body;
+    const { descripcion_falla, estado, total_estimado, id_mecanico } = req.body;
     
     const query = `
       UPDATE orden_trabajo 
-      SET diagnostico = $1, estado = $2, total_estimado = $3 
-      WHERE id_ot = $4
+      SET diagnostico = $1, estado = $2, total_estimado = $3, id_mecanico = $4
+      WHERE id_ot = $5
     `;
     
-    await db.query(query, [descripcion_falla, estado, total_estimado, id]);
+    await db.query(query, [descripcion_falla, estado, total_estimado, id_mecanico || null, id]);
     res.json({ mensaje: 'Orden de trabajo actualizada correctamente' });
   } catch (error) {
     console.error('Error actualizando orden:', error);
@@ -445,6 +468,7 @@ app.use((req, res, next) => {
   if (req.method !== 'GET' || req.path.startsWith('/api')) return next();
   res.sendFile(path.join(publicDir, 'index.html'), (err) => { if (err) next(); });
 });
+
 
 // Iniciar servidor
 app.listen(PORT, '0.0.0.0', () => {

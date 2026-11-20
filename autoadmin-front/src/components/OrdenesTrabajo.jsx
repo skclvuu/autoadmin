@@ -1,18 +1,20 @@
 import { useState, useEffect } from 'react'
 import VehiculoSelect from './VehiculoSelect'
+import MecanicoSelect from './MecanicoSelect'
 
 export default function OrdenesTrabajo() {
   const [ordenes, setOrdenes] = useState([])
   const [vehiculos, setVehiculos] = useState([])
+  const [mecanicos, setMecanicos] = useState([])
   const [cargando, setCargando] = useState(true)
   
   const [formulario, setFormulario] = useState({
-    id_vehiculo: '', descripcion_falla: '', total_estimado: ''
+    id_vehiculo: '', id_mecanico: '', descripcion_falla: '', total_estimado: ''
   })
 
   const [editandoId, setEditandoId] = useState(null)
   const [datosEditados, setDatosEditados] = useState({
-    estado: '', total_estimado: '', descripcion_falla: ''
+    estado: '', total_estimado: '', descripcion_falla: '', id_mecanico: ''
   })
 
   const [busqueda, setBusqueda] = useState('')
@@ -22,17 +24,27 @@ export default function OrdenesTrabajo() {
 
   const cargarDatos = async () => {
     try {
-      const resOrdenes = await fetch('/api/ordenes')
-      const dataOrdenes = await resOrdenes.json()
-      setOrdenes(dataOrdenes)
+      const [resOrdenes, resVehiculos, resMecanicos] = await Promise.all([
+        fetch('/api/ordenes'),
+        fetch('/api/vehiculos'),
+        fetch('/api/mecanicos')
+      ])
 
-      const resVehiculos = await fetch('/api/vehiculos')
+      const dataOrdenes = await resOrdenes.json()
+      setOrdenes(Array.isArray(dataOrdenes) ? dataOrdenes : [])
+
       const dataVehiculos = await resVehiculos.json()
-      setVehiculos(dataVehiculos)
+      setVehiculos(Array.isArray(dataVehiculos) ? dataVehiculos : [])
+
+      if (resMecanicos.ok) {
+        const dataMecanicos = await resMecanicos.json()
+        setMecanicos(Array.isArray(dataMecanicos) ? dataMecanicos : [])
+      }
       
       setCargando(false)
     } catch (error) {
       console.error('Error conectando al backend:', error)
+      setCargando(false)
     }
   }
 
@@ -57,7 +69,7 @@ export default function OrdenesTrabajo() {
         body: JSON.stringify(formulario)
       })
       if (respuesta.ok) {
-        setFormulario({ id_vehiculo: '', descripcion_falla: '', total_estimado: '' })
+        setFormulario({ id_vehiculo: '', id_mecanico: '', descripcion_falla: '', total_estimado: '' })
         cargarDatos()
         setVistaActiva('activas')
       }
@@ -71,7 +83,8 @@ export default function OrdenesTrabajo() {
     setDatosEditados({
       estado: orden.estado,
       total_estimado: orden.total_estimado,
-      descripcion_falla: orden.descripcion_falla
+      descripcion_falla: orden.descripcion_falla,
+      id_mecanico: orden.id_mecanico || ''
     })
   }
 
@@ -100,7 +113,8 @@ export default function OrdenesTrabajo() {
   const ordenesFiltradas = ordenesPorPestana.filter(orden => 
     orden.patente.toLowerCase().includes(busqueda.toLowerCase()) ||
     orden.estado.toLowerCase().includes(busqueda.toLowerCase()) ||
-    orden.nombre_cliente.toLowerCase().includes(busqueda.toLowerCase())
+    orden.nombre_cliente.toLowerCase().includes(busqueda.toLowerCase()) ||
+    (orden.nombre_mecanico || '').toLowerCase().includes(busqueda.toLowerCase())
   )
 
   const totalPaginas = Math.ceil(ordenesFiltradas.length / ordenesPorPagina)
@@ -142,7 +156,7 @@ export default function OrdenesTrabajo() {
       <div style={{ backgroundColor: 'var(--bg-card)', padding: '24px', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', border: '1px solid var(--border-color)', marginBottom: '32px' }}>
         <h3 style={{ margin: '0 0 24px 0', fontSize: '18px', color: 'var(--text-main)' }}>Ingresar Orden de Trabajo</h3>
         <form onSubmit={guardarOrden}>
-          <div className="grid-1-2-1" style={{ marginBottom: '24px' }}>
+          <div className="grid-2" style={{ marginBottom: '24px' }}>
             <div>
               <label style={{ fontSize: '14px', fontWeight: '500' }}>Vehículo</label>
               <VehiculoSelect
@@ -154,6 +168,18 @@ export default function OrdenesTrabajo() {
                 style={inputStyle}
                 placeholder="Seleccione patente..."
                 formato={(v) => `${v.patente} - ${v.marca} ${v.modelo}`}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: '14px', fontWeight: '500' }}>Mecánico Asignado</label>
+              <MecanicoSelect
+                name="id_mecanico"
+                mecanicos={mecanicos}
+                value={formulario.id_mecanico}
+                onChange={manejarCambio}
+                required
+                style={inputStyle}
+                placeholder="Buscar o seleccionar mecánico..."
               />
             </div>
             <div>
@@ -192,7 +218,7 @@ export default function OrdenesTrabajo() {
           <div className="search-box" style={{ paddingBottom: '10px' }}>
             <input 
               type="text" 
-              placeholder="Buscar patente o cliente..." 
+              placeholder="Buscar patente, cliente o mecánico..." 
               value={busqueda} 
               onChange={(e) => {setBusqueda(e.target.value); setPaginaActual(1)}} 
               style={{ ...inputStyle, marginTop: 0 }} 
@@ -210,7 +236,8 @@ export default function OrdenesTrabajo() {
                   <tr style={{ borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '14px' }}>
                     <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>N° Orden</th>
                     <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Vehículo / Cliente</th>
-                    <th style={{ padding: '0 8px 16px 8px', fontWeight: '600', width: '30%' }}>Detalle Falla</th>
+                    <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Mecánico</th>
+                    <th style={{ padding: '0 8px 16px 8px', fontWeight: '600', width: '25%' }}>Detalle Falla</th>
                     <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Total ($)</th>
                     <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Estado</th>
                     <th style={{ padding: '0 8px 16px 8px', fontWeight: '600', width: '160px' }}>Acciones</th>
@@ -226,6 +253,18 @@ export default function OrdenesTrabajo() {
                           <td style={{ padding: '16px 8px' }}>
                             <div style={{ fontWeight: '500' }}>{orden.patente}</div>
                             <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{orden.nombre_cliente}</div>
+                          </td>
+                          <td style={{ padding: '16px 8px' }}>
+                            {editandoId === orden.id_orden ? (
+                              <MecanicoSelect
+                                name="id_mecanico"
+                                mecanicos={mecanicos}
+                                value={datosEditados.id_mecanico}
+                                onChange={manejarCambioEdicion}
+                                style={editInputStyle}
+                                placeholder="Sin asignar"
+                              />
+                            ) : (orden.nombre_mecanico || 'Sin asignar')}
                           </td>
                           <td style={{ padding: '16px 8px' }}>
                             {editandoId === orden.id_orden ? <input type="text" name="descripcion_falla" value={datosEditados.descripcion_falla} onChange={manejarCambioEdicion} style={editInputStyle} /> : orden.descripcion_falla}
@@ -259,7 +298,7 @@ export default function OrdenesTrabajo() {
                     })
                   ) : (
                     <tr>
-                      <td colSpan="6" style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                      <td colSpan="7" style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>
                         No hay órdenes en esta categoría.
                       </td>
                     </tr>

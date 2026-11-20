@@ -1,10 +1,154 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+
+function SelectorCliente({ clientes, value, onChange, placeholder = 'Seleccione un cliente...', compacto = false }) {
+  const [abierto, setAbierto] = useState(false)
+  const [busqueda, setBusqueda] = useState('')
+  const contenedorRef = useRef(null)
+
+  const formatear = (c) => `${c.nombre} - ${c.rut}`
+
+  // Sincroniza el texto mostrado cuando cambia el value externo (ej: al limpiar formulario o iniciar edición)
+  useEffect(() => {
+    const encontrado = clientes.find((c) => String(c.id_cliente) === String(value))
+    setBusqueda(encontrado ? formatear(encontrado) : '')
+  }, [value, clientes])
+
+  // Cierra el menú al hacer clic fuera
+  useEffect(() => {
+    const manejarClickFuera = (e) => {
+      if (contenedorRef.current && !contenedorRef.current.contains(e.target)) {
+        setAbierto(false)
+        const encontrado = clientes.find((c) => String(c.id_cliente) === String(value))
+        setBusqueda(encontrado ? formatear(encontrado) : '')
+      }
+    }
+    document.addEventListener('mousedown', manejarClickFuera)
+    return () => document.removeEventListener('mousedown', manejarClickFuera)
+  }, [value, clientes])
+
+  const filtrados = clientes.filter((c) => {
+    const texto = formatear(c).toLowerCase()
+    return texto.includes(busqueda.toLowerCase())
+  })
+
+  const seleccionar = (cliente) => {
+    setBusqueda(formatear(cliente))
+    onChange(cliente.id_cliente)
+    setAbierto(false)
+  }
+
+  return (
+    <div ref={contenedorRef} style={{ position: 'relative', width: '100%' }}>
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+        <input
+          type="text"
+          value={busqueda}
+          placeholder={placeholder}
+          onFocus={() => {
+            setAbierto(true)
+            setBusqueda('')
+          }}
+          onChange={(e) => {
+            setBusqueda(e.target.value)
+            setAbierto(true)
+            if (e.target.value === '') onChange('')
+          }}
+          style={{
+            width: '100%',
+            padding: compacto ? '5px 28px 5px 8px' : '10px 32px 10px 12px',
+            borderRadius: compacto ? '4px' : '6px',
+            border: abierto
+              ? '1.5px solid #0f172a'
+              : compacto
+                ? '1px solid #2563eb'
+                : '1px solid var(--border-color)',
+            marginTop: compacto ? '0' : '6px',
+            fontSize: '14px',
+            fontFamily: 'inherit',
+            color: 'var(--text-main)',
+            backgroundColor: 'var(--bg-card)',
+            boxSizing: 'border-box',
+            outline: 'none'
+          }}
+        />
+        <span
+          onClick={() => setAbierto((prev) => !prev)}
+          style={{
+            position: 'absolute',
+            right: '10px',
+            top: compacto ? '50%' : 'calc(50% + 3px)',
+            transform: 'translateY(-50%)',
+            fontSize: '10px',
+            color: '#64748b',
+            cursor: 'pointer',
+            userSelect: 'none'
+          }}
+        >
+          {abierto ? '▲' : '▼'}
+        </span>
+      </div>
+
+      {abierto && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 4px)',
+            left: 0,
+            right: 0,
+            backgroundColor: 'var(--bg-card)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '8px',
+            boxShadow: '0 8px 20px rgba(15, 23, 42, 0.12)',
+            maxHeight: '220px',
+            overflowY: 'auto',
+            zIndex: 50
+          }}
+        >
+          {filtrados.length > 0 ? (
+            filtrados.map((c) => {
+              const seleccionado = String(c.id_cliente) === String(value)
+              return (
+                <div
+                  key={c.id_cliente}
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    seleccionar(c)
+                  }}
+                  style={{
+                    padding: '10px 14px',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    color: 'var(--text-main)',
+                    backgroundColor: seleccionado ? '#eff6ff' : 'transparent',
+                    fontWeight: seleccionado ? '600' : '400',
+                    transition: 'background-color 0.15s'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!seleccionado) e.currentTarget.style.backgroundColor = '#f8fafc'
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!seleccionado) e.currentTarget.style.backgroundColor = 'transparent'
+                  }}
+                >
+                  {formatear(c)}
+                </div>
+              )
+            })
+          ) : (
+            <div style={{ padding: '12px 14px', fontSize: '13px', color: 'var(--text-muted)' }}>
+              No se encontraron clientes
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function Vehiculos() {
   const [vehiculos, setVehiculos] = useState([])
-  const [clientes, setClientes] = useState([]) // Necesario para el selector de dueños
+  const [clientes, setClientes] = useState([])
   const [cargando, setCargando] = useState(true)
-  
   const [formulario, setFormulario] = useState({
     patente: '', marca: '', modelo: '', anio: '', id_cliente: ''
   })
@@ -20,7 +164,6 @@ export default function Vehiculos() {
 
   const cargarDatos = async () => {
     try {
-      // Cargamos vehículos y clientes al mismo tiempo
       const resVehiculos = await fetch('/api/vehiculos')
       const dataVehiculos = await resVehiculos.json()
       setVehiculos(dataVehiculos)
@@ -28,7 +171,7 @@ export default function Vehiculos() {
       const resClientes = await fetch('/api/clientes')
       const dataClientes = await resClientes.json()
       setClientes(dataClientes)
-      
+
       setCargando(false)
     } catch (error) {
       console.error('Error conectando al backend:', error)
@@ -54,6 +197,11 @@ export default function Vehiculos() {
 
   const guardarVehiculo = async (e) => {
     e.preventDefault()
+    if (!formulario.id_cliente) {
+      alert('Por favor, selecciona un cliente de la lista.')
+      return
+    }
+
     try {
       const respuesta = await fetch('/api/vehiculos', {
         method: 'POST',
@@ -85,6 +233,11 @@ export default function Vehiculos() {
   }
 
   const guardarEdicion = async (id) => {
+    if (!datosEditados.id_cliente) {
+      alert('Por favor, selecciona un cliente de la lista.')
+      return
+    }
+
     try {
       const respuesta = await fetch(`/api/vehiculos/${id}`, {
         method: 'PUT',
@@ -101,7 +254,7 @@ export default function Vehiculos() {
   }
 
   // Lógica de filtrado y paginación
-  const vehiculosFiltrados = vehiculos.filter(vehiculo => 
+  const vehiculosFiltrados = vehiculos.filter(vehiculo =>
     vehiculo.patente.toLowerCase().includes(busquedaPatente.toLowerCase())
   )
   const totalPaginas = Math.ceil(vehiculosFiltrados.length / vehiculosPorPagina)
@@ -125,7 +278,7 @@ export default function Vehiculos() {
   return (
     <>
       <p style={{ color: 'var(--text-muted)', margin: '0 0 32px 0' }}>Gestión de parque automotriz y asignación de dueños</p>
-      
+
       {/* Formulario Fijo */}
       <div style={{ backgroundColor: 'var(--bg-card)', padding: '24px', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', border: '1px solid var(--border-color)', marginBottom: '32px' }}>
         <h3 style={{ margin: '0 0 24px 0', fontSize: '18px', color: 'var(--text-main)' }}>Registrar Nuevo Vehículo</h3>
@@ -135,17 +288,15 @@ export default function Vehiculos() {
             <div><label style={{ fontSize: '14px', fontWeight: '500' }}>Marca</label><input type="text" name="marca" value={formulario.marca} onChange={manejarCambio} required placeholder="Ej: Toyota" style={inputStyle} /></div>
             <div><label style={{ fontSize: '14px', fontWeight: '500' }}>Modelo</label><input type="text" name="modelo" value={formulario.modelo} onChange={manejarCambio} required placeholder="Ej: Yaris" style={inputStyle} /></div>
             <div><label style={{ fontSize: '14px', fontWeight: '500' }}>Año</label><input type="number" name="anio" value={formulario.anio} onChange={manejarCambio} required placeholder="Ej: 2020" style={inputStyle} /></div>
-            
+
             <div className="span-2">
               <label style={{ fontSize: '14px', fontWeight: '500' }}>Dueño (Cliente)</label>
-              <select name="id_cliente" value={formulario.id_cliente} onChange={manejarCambio} required style={inputStyle}>
-                <option value="">Seleccione un cliente...</option>
-                {clientes.map(cliente => (
-                  <option key={cliente.id_cliente} value={cliente.id_cliente}>
-                    {cliente.nombre} - {cliente.rut}
-                  </option>
-                ))}
-              </select>
+              <SelectorCliente
+                clientes={clientes}
+                value={formulario.id_cliente}
+                onChange={(id) => setFormulario({ ...formulario, id_cliente: id })}
+                placeholder="Seleccione cliente..."
+              />
             </div>
           </div>
           <button type="submit" style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', padding: '10px 24px', borderRadius: '6px', fontWeight: '500', cursor: 'pointer' }}>Guardar Vehículo</button>
@@ -154,19 +305,19 @@ export default function Vehiculos() {
 
       {/* Tabla Vehículos */}
       <div style={{ backgroundColor: 'var(--bg-card)', padding: '24px', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', border: '1px solid var(--border-color)' }}>
-        
+
         <div className="header-flex" style={{ marginBottom: '24px' }}>
           <h3 style={{ margin: 0, fontSize: '18px', color: 'var(--text-main)' }}>Registro de Vehículos</h3>
           <div className="search-box">
             <input type="text" placeholder="Buscar por patente..." value={busquedaPatente} onChange={manejarBusqueda} style={{ ...inputStyle, marginTop: 0, borderColor: '#38bdf8' }} />
           </div>
         </div>
-        
+
         {cargando ? (
           <p style={{ color: 'var(--text-muted)' }}>Cargando vehículos...</p>
         ) : (
           <>
-            <div className="table-responsive">
+            <div className="table-responsive" style={{ overflow: 'visible' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', marginBottom: '24px' }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '14px' }}>
@@ -194,11 +345,15 @@ export default function Vehiculos() {
                         <td style={{ padding: '16px 8px' }}>
                           {editandoId === vehiculo.id_vehiculo ? <input type="number" name="anio" value={datosEditados.anio} onChange={manejarCambioEdicion} style={editInputStyle} /> : vehiculo.anio}
                         </td>
-                        <td style={{ padding: '16px 8px' }}>
+                        <td style={{ padding: '16px 8px', minWidth: '220px' }}>
                           {editandoId === vehiculo.id_vehiculo ? (
-                            <select name="id_cliente" value={datosEditados.id_cliente} onChange={manejarCambioEdicion} style={editInputStyle}>
-                              {clientes.map(c => <option key={c.id_cliente} value={c.id_cliente}>{c.nombre}</option>)}
-                            </select>
+                            <SelectorCliente
+                              clientes={clientes}
+                              value={datosEditados.id_cliente}
+                              onChange={(id) => setDatosEditados({ ...datosEditados, id_cliente: id })}
+                              placeholder="Buscar cliente..."
+                              compacto
+                            />
                           ) : vehiculo.nombre_cliente}
                         </td>
                         <td style={{ padding: '16px 8px' }}>
