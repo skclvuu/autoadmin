@@ -7,13 +7,11 @@ function SelectorCliente({ clientes, value, onChange, placeholder = 'Seleccione 
 
   const formatear = (c) => `${c.nombre} - ${c.rut}`
 
-  // Sincroniza el texto mostrado cuando cambia el value externo (ej: al limpiar formulario o iniciar edición)
   useEffect(() => {
     const encontrado = clientes.find((c) => String(c.id_cliente) === String(value))
     setBusqueda(encontrado ? formatear(encontrado) : '')
   }, [value, clientes])
 
-  // Cierra el menú al hacer clic fuera
   useEffect(() => {
     const manejarClickFuera = (e) => {
       if (contenedorRef.current && !contenedorRef.current.contains(e.target)) {
@@ -148,7 +146,10 @@ function SelectorCliente({ clientes, value, onChange, placeholder = 'Seleccione 
 export default function Vehiculos() {
   const [vehiculos, setVehiculos] = useState([])
   const [clientes, setClientes] = useState([])
+  const [ordenes, setOrdenes] = useState([])
   const [cargando, setCargando] = useState(true)
+  const [vehiculoDetalle, setVehiculoDetalle] = useState(null)
+
   const [formulario, setFormulario] = useState({
     patente: '', marca: '', modelo: '', anio: '', id_cliente: ''
   })
@@ -164,17 +165,23 @@ export default function Vehiculos() {
 
   const cargarDatos = async () => {
     try {
-      const resVehiculos = await fetch('/api/vehiculos')
-      const dataVehiculos = await resVehiculos.json()
-      setVehiculos(dataVehiculos)
+      const [resVehiculos, resClientes, resOrdenes] = await Promise.all([
+        fetch('/api/vehiculos'),
+        fetch('/api/clientes'),
+        fetch('/api/ordenes')
+      ])
 
-      const resClientes = await fetch('/api/clientes')
-      const dataClientes = await resClientes.json()
-      setClientes(dataClientes)
+      const dataVehiculos = resVehiculos.ok ? await resVehiculos.json() : []
+      const dataClientes = resClientes.ok ? await resClientes.json() : []
+      const dataOrdenes = resOrdenes.ok ? await resOrdenes.json() : []
 
-      setCargando(false)
+      setVehiculos(Array.isArray(dataVehiculos) ? dataVehiculos : [])
+      setClientes(Array.isArray(dataClientes) ? dataClientes : [])
+      setOrdenes(Array.isArray(dataOrdenes) ? dataOrdenes : [])
     } catch (error) {
       console.error('Error conectando al backend:', error)
+    } finally {
+      setCargando(false)
     }
   }
 
@@ -264,6 +271,29 @@ export default function Vehiculos() {
 
   const cambiarPagina = (numeroPagina) => setPaginaActual(numeroPagina)
 
+  const duenoDetalle = vehiculoDetalle
+    ? clientes.find(c => String(c.id_cliente) === String(vehiculoDetalle.id_cliente))
+    : null
+
+  const ordenesDelVehiculo = vehiculoDetalle
+    ? ordenes.filter(o =>
+        String(o.id_vehiculo) === String(vehiculoDetalle.id_vehiculo) ||
+        (o.patente && o.patente.toLowerCase() === vehiculoDetalle.patente.toLowerCase())
+      )
+    : []
+
+  const formatearDinero = (monto) =>
+    new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(Number(monto) || 0)
+
+  const obtenerColorEstado = (estado) => {
+    switch (estado) {
+      case 'Pendiente': return { bg: '#fee2e2', text: '#b91c1c' }
+      case 'En Proceso': return { bg: '#fef3c7', text: '#b45309' }
+      case 'Terminado': return { bg: '#d1fae5', text: '#047857' }
+      default: return { bg: '#f1f5f9', text: '#475569' }
+    }
+  }
+
   const inputStyle = {
     width: '100%', padding: '10px 12px', borderRadius: '6px',
     border: '1px solid var(--border-color)', marginTop: '6px', fontSize: '14px',
@@ -326,7 +356,7 @@ export default function Vehiculos() {
                     <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Modelo</th>
                     <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Año</th>
                     <th style={{ padding: '0 8px 16px 8px', fontWeight: '600' }}>Dueño</th>
-                    <th style={{ padding: '0 8px 16px 8px', fontWeight: '600', width: '160px' }}>Acciones</th>
+                    <th style={{ padding: '0 8px 16px 8px', fontWeight: '600', width: '190px' }}>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -363,9 +393,20 @@ export default function Vehiculos() {
                               <button onClick={cancelarEdicion} style={{ padding: '6px 10px', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>Cancelar</button>
                             </div>
                           ) : (
-                            <button onClick={() => iniciarEdicion(vehiculo)} style={{ backgroundColor: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: '500' }}>
-                              Editar
-                            </button>
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              <button
+                                onClick={() => setVehiculoDetalle(vehiculo)}
+                                style={{ backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', padding: '6px 10px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}
+                              >
+                                Detalles
+                              </button>
+                              <button
+                                onClick={() => iniciarEdicion(vehiculo)}
+                                style={{ backgroundColor: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-main)', padding: '6px 10px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: '500' }}
+                              >
+                                Editar
+                              </button>
+                            </div>
                           )}
                         </td>
                       </tr>
@@ -389,6 +430,113 @@ export default function Vehiculos() {
           </>
         )}
       </div>
+
+      {/* Modal de Detalles del Vehículo */}
+      {vehiculoDetalle && (
+        <div
+          onClick={() => setVehiculoDetalle(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.55)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            zIndex: 1000
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: 'var(--bg-card)',
+              borderRadius: '14px',
+              border: '1px solid var(--border-color)',
+              width: '100%',
+              maxWidth: '620px',
+              maxHeight: '85vh',
+              overflowY: 'auto',
+              padding: '24px',
+              boxShadow: '0 20px 40px rgba(15, 23, 42, 0.25)'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '14px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '20px', color: '#2563eb' }}>{vehiculoDetalle.patente}</h3>
+                <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: 'var(--text-main)', fontWeight: '500' }}>
+                  {vehiculoDetalle.marca} {vehiculoDetalle.modelo} · Año {vehiculoDetalle.anio}
+                </p>
+              </div>
+              <button
+                onClick={() => setVehiculoDetalle(null)}
+                style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-muted)', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}
+              >
+                Cerrar
+              </button>
+            </div>
+
+            {/* Datos del Dueño */}
+            <div style={{ padding: '14px', borderRadius: '10px', border: '1px solid var(--border-color)', backgroundColor: 'rgba(148, 163, 184, 0.06)', marginBottom: '22px' }}>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>
+                Propietario
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px', fontSize: '14px' }}>
+                <div><strong>Nombre:</strong> {duenoDetalle?.nombre || vehiculoDetalle.nombre_cliente || 'No asignado'}</div>
+                <div><strong>RUT:</strong> {duenoDetalle?.rut || 'No registrado'}</div>
+                <div><strong>Teléfono:</strong> {duenoDetalle?.telefono || 'No registrado'}</div>
+                <div><strong>Email:</strong> {duenoDetalle?.email || 'No registrado'}</div>
+              </div>
+            </div>
+
+            {/* Historial de Órdenes */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <h4 style={{ margin: 0, fontSize: '15px', color: 'var(--text-main)' }}>Historial de Órdenes de Trabajo</h4>
+                <span style={{ fontSize: '12px', fontWeight: '600', color: '#2563eb', backgroundColor: '#eff6ff', padding: '3px 10px', borderRadius: '999px' }}>
+                  {ordenesDelVehiculo.length} {ordenesDelVehiculo.length === 1 ? 'orden' : 'órdenes'}
+                </span>
+              </div>
+
+              {ordenesDelVehiculo.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {ordenesDelVehiculo.map((ot) => {
+                    const colores = obtenerColorEstado(ot.estado)
+                    return (
+                      <div
+                        key={ot.id_orden}
+                        style={{
+                          padding: '12px 14px',
+                          borderRadius: '8px',
+                          border: '1px solid var(--border-color)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '6px'
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontWeight: '700', color: '#2563eb', fontSize: '14px' }}>OT #{ot.id_orden}</span>
+                          <span style={{ backgroundColor: colores.bg, color: colores.text, padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '600' }}>
+                            {ot.estado}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '13px', color: 'var(--text-main)' }}>{ot.descripcion_falla}</div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-muted)' }}>
+                          <span>Mecánico: {ot.nombre_mecanico || 'Sin asignar'}</span>
+                          <span style={{ fontWeight: '600', color: 'var(--text-main)' }}>{formatearDinero(ot.total_estimado)}</span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-muted)', padding: '14px', borderRadius: '8px', border: '1px dashed var(--border-color)', textAlign: 'center' }}>
+                  Este vehículo aún no registra órdenes de trabajo.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

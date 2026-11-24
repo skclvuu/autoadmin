@@ -53,11 +53,15 @@ export default function OrdenesTrabajo() {
   }, [])
 
   const manejarCambio = (e) => {
-    setFormulario({ ...formulario, [e.target.name]: e.target.value })
+    const { name, value } = e.target
+    const valorLimpio = name === 'total_estimado' ? value.replace(/\D/g, '') : value
+    setFormulario({ ...formulario, [name]: valorLimpio })
   }
 
   const manejarCambioEdicion = (e) => {
-    setDatosEditados({ ...datosEditados, [e.target.name]: e.target.value })
+    const { name, value } = e.target
+    const valorLimpio = name === 'total_estimado' ? value.replace(/\D/g, '') : value
+    setDatosEditados({ ...datosEditados, [name]: valorLimpio })
   }
 
   const guardarOrden = async (e) => {
@@ -82,7 +86,7 @@ export default function OrdenesTrabajo() {
     setEditandoId(orden.id_orden)
     setDatosEditados({
       estado: orden.estado,
-      total_estimado: orden.total_estimado,
+      total_estimado: orden.total_estimado ? String(Math.round(Number(orden.total_estimado))) : '',
       descripcion_falla: orden.descripcion_falla,
       id_mecanico: orden.id_mecanico || ''
     })
@@ -106,9 +110,9 @@ export default function OrdenesTrabajo() {
 
   // --- LÓGICA DE PESTAÑAS, FILTRADO Y PAGINACIÓN ---
   const ordenesPorPestana = ordenes.filter(orden => {
-    if (vistaActiva === 'activas') return orden.estado !== 'Terminado';
-    return orden.estado === 'Terminado';
-  });
+    if (vistaActiva === 'activas') return orden.estado !== 'Terminado'
+    return orden.estado === 'Terminado'
+  })
 
   const ordenesFiltradas = ordenesPorPestana.filter(orden => 
     orden.patente.toLowerCase().includes(busqueda.toLowerCase()) ||
@@ -121,7 +125,11 @@ export default function OrdenesTrabajo() {
   const ordenesPaginadas = ordenesFiltradas.slice((paginaActual - 1) * ordenesPorPagina, paginaActual * ordenesPorPagina)
 
   const formatearDinero = (monto) => {
-    return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(monto)
+    return new Intl.NumberFormat('es-CL', {
+      style: 'currency',
+      currency: 'CLP',
+      maximumFractionDigits: 0
+    }).format(Number(monto) || 0)
   }
 
   const obtenerColorEstado = (estado) => {
@@ -188,7 +196,15 @@ export default function OrdenesTrabajo() {
             </div>
             <div>
               <label style={{ fontSize: '14px', fontWeight: '500' }}>Presupuesto Estimado</label>
-              <input type="number" name="total_estimado" value={formulario.total_estimado} onChange={manejarCambio} placeholder="Ej: 50000" style={inputStyle} />
+              <input
+                type="text"
+                inputMode="numeric"
+                name="total_estimado"
+                value={formulario.total_estimado}
+                onChange={manejarCambio}
+                placeholder="Ej: 50000"
+                style={inputStyle}
+              />
             </div>
           </div>
           <button type="submit" style={{ backgroundColor: '#2563eb', color: 'white', border: 'none', padding: '10px 24px', borderRadius: '6px', fontWeight: '500', cursor: 'pointer' }}>Generar Orden</button>
@@ -270,7 +286,16 @@ export default function OrdenesTrabajo() {
                             {editandoId === orden.id_orden ? <input type="text" name="descripcion_falla" value={datosEditados.descripcion_falla} onChange={manejarCambioEdicion} style={editInputStyle} /> : orden.descripcion_falla}
                           </td>
                           <td style={{ padding: '16px 8px', fontWeight: '500' }}>
-                            {editandoId === orden.id_orden ? <input type="number" name="total_estimado" value={datosEditados.total_estimado} onChange={manejarCambioEdicion} style={editInputStyle} /> : formatearDinero(orden.total_estimado)}
+                            {editandoId === orden.id_orden ? (
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                name="total_estimado"
+                                value={datosEditados.total_estimado}
+                                onChange={manejarCambioEdicion}
+                                style={editInputStyle}
+                              />
+                            ) : formatearDinero(orden.total_estimado)}
                           </td>
                           <td style={{ padding: '16px 8px' }}>
                             {editandoId === orden.id_orden ? (

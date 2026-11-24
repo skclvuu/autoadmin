@@ -86,14 +86,15 @@ export default function Cotizaciones() {
   }
 
   const generarPDF = (coti) => {
-    const netoCalc = Math.round(coti.total / 1.19);
-    const ivaCalc = coti.total - netoCalc;
-    const fechaFormat = new Date(coti.fecha_emision).toLocaleDateString('es-CL');
+    const netoCalc = Math.round(coti.total / 1.19)
+    const ivaCalc = coti.total - netoCalc
+    const fechaFormat = new Date(coti.fecha_emision).toLocaleDateString('es-CL')
 
-    const ventana = window.open('', '_blank');
-    ventana.document.write(`
+    const html = `
+      <!DOCTYPE html>
       <html>
         <head>
+          <meta charset="UTF-8" />
           <title>Cotización #${coti.id_cotizacion}</title>
           <style>
             body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #333; }
@@ -121,23 +122,31 @@ export default function Cotizaciones() {
             <div><span>IVA (19%):</span> <span>$${ivaCalc.toLocaleString('es-CL')}</span></div>
             <div class="total-final"><span>TOTAL:</span> <span>$${Number(coti.total).toLocaleString('es-CL')}</span></div>
           </div>
+          <script>
+            window.onload = function() {
+              setTimeout(function() { window.print(); }, 200);
+            };
+          </script>
         </body>
       </html>
-    `);
-    ventana.document.close();
-    setTimeout(() => ventana.print(), 250);
+    `
+
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    window.open(url, '_blank', 'noopener,noreferrer')
+    setTimeout(() => URL.revokeObjectURL(url), 10000)
   }
 
   const enviarPorCorreo = async (coti) => {
-    const emailPrompt = window.prompt(`Ingrese correo para enviar cotización a ${coti.nombre_cliente}:`, "cliente@ejemplo.com");
-    if (!emailPrompt) return;
+    const emailPrompt = window.prompt(`Ingrese correo para enviar cotización a ${coti.nombre_cliente}:`, "cliente@ejemplo.com")
+    if (!emailPrompt) return
     try {
       const res = await fetch(`/api/cotizaciones/${coti.id_cotizacion}/enviar`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: emailPrompt, nombre_cliente: coti.nombre_cliente, detalle: coti.detalle, total: coti.total })
-      });
-      if (res.ok) alert('Cotización enviada exitosamente.');
-    } catch (error) { alert('Error al enviar correo.'); }
+      })
+      if (res.ok) alert('Cotización enviada exitosamente.')
+    } catch (error) { alert('Error al enviar correo.') }
   }
 
   const filtradas = cotizaciones.filter(coti => 

@@ -6,6 +6,7 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const authRoutes = require('./routes/authRoutes');
+const cron = require('node-cron');
 
 app.use(cors());
 app.use(express.json());
@@ -469,6 +470,118 @@ app.use((req, res, next) => {
   res.sendFile(path.join(publicDir, 'index.html'), (err) => { if (err) next(); });
 });
 
+// ==========================================
+// ALERTA SEMANAL DE INVENTARIO POR CORREO
+// ==========================================
+
+const crearTransporter = () => {
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    }
+  });
+};
+
+const enviarCorreoStockCritico = async (soloSiHayCriticos = true) => {
+  const destino = process.env.ADMIN_EMAIL || process.env.EMAIL_USER;
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS || !destino) {
+    throw new Error('Faltan variables de entorno EMAIL_USER, EMAIL_PASS o ADMIN_EMAIL');
+  }
+
+  const result = await db.query(`
+    SELECT codigo, nombre, stock_actual, stock_minimo, ubicacion
+    FROM repuesto
+    WHERE stock_actual <= stock_minimo
+    ORDER BY stock_actual ASC
+  `);
+
+  const criticos = result.rows;
+
+  if (soloSiHayCriticos && criticos.length === 0) {
+    console.log('Cron Stock: Sin repuestos críticos, no se envía correo.');
+    return { enviado: false, cantidad: 0 };
+  }
+
+  const fechaHoy = new Date().toLocaleDateString('es-CL', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+
+  const filasHtml = criticos.length > 0
+    ? criticos.map(item => `
+        <tr>
+          <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-family: monospace;">${item.codigo}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: 600;">${item.nombre}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${item.ubicacion || 'Sin ubicación'}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; color: #dc2626; font-weight: 700; text-align: center;">${Number(item.stock_actual)}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center;">${Number(item.stock_minimo)}</td>
+        </tr>
+      `).join('')
+    : `<tr><td colspan="5" style="padding: 16px; text-align: center; color: #047857;">Todo el inventario está sobre el stock mínimo.</td></tr>`;
+
+  const transporter = crearTransporter();
+  await transporter.sendMail({
+    from: `AutoAdmin Taller <${process.env.EMAIL_USER}>`,
+    to: destino,
+    subject: `Alerta Semanal de Inventario - ${criticos.length} repuesto(s) crítico(s)`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; color: #1e293b;">
+        <div style="background-color: #0f172a; color: white; padding: 20px 24px; border-radius: 10px 10px 0 0;">
+          <h2 style="margin: 0; font-size: 20px;">AutoAdmin · Reporte Semanal de Stock</h2>
+          <p style="margin: 6px 0 0 0; font-size: 13px; color: #94a3b8; text-transform: capitalize;">${fechaHoy}</p>
+        </div>
+        <div style="padding: 24px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 10px 10px;">
+          <p style="margin-top: 0;">Se detectaron <strong>${criticos.length}</strong> repuestos en o bajo su stock mínimo:</p>
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin: 16px 0;">
+            <thead>
+              <tr style="background-color: #f8fafc; text-align: left; color: #475569;">
+                <th style="padding: 10px; border-bottom: 2px solid #cbd5e1;">SKU</th>
+                <th style="padding: 10px; border-bottom: 2px solid #cbd5e1;">Repuesto</th>
+                <th style="padding: 10px; border-bottom: 2px solid #cbd5e1;">Ubicación</th>
+                <th style="padding: 10px; border-bottom: 2px solid #cbd5e1; text-align: center;">Actual</th>
+                <th style="padding: 10px; border-bottom: 2px solid #cbd5e1; text-align: center;">Mínimo</th>
+              </tr>
+            </thead>
+            <tbody>${filasHtml}</tbody>
+          </table>
+          <p style="font-size: 12px; color: #64748b; margin-bottom: 0;">
+            Mensaje automático generado por el sistema de gestión de taller AutoAdmin.
+          </p>
+        </div>
+      </div>
+    `
+  });
+
+  console.log(`Correo de alerta semanal enviado a ${destino} (${criticos.length} críticos).`);
+  return { enviado: true, cantidad: criticos.length };
+};
+
+// Programado: todos los lunes a las 08:00 AM (hora de Chile)
+cron.schedule('0 8 * * 1', async () => {
+  try {
+    await enviarCorreoStockCritico(true);
+  } catch (error) {
+    console.error('Error en cron semanal de inventario:', error.message);
+  }
+}, { timezone: 'America/Santiago' });
+
+// Ruta manual para probar y demostrar en vivo en la tesis
+app.post('/api/notificaciones/correo-stock', async (req, res) => {
+  try {
+    const resultado = await enviarCorreoStockCritico(false);
+    res.json({
+      mensaje: 'Correo de alerta de inventario enviado correctamente',
+      ...resultado
+    });
+  } catch (error) {
+    console.error('Error enviando correo de stock:', error);
+    res.status(500).json({ error: error.message || 'Error al enviar el correo' });
+  }
+});
 
 // Iniciar servidor
 app.listen(PORT, '0.0.0.0', () => {

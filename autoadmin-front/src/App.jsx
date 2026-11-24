@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { LayoutDashboard, Users, Car, Wrench, FileText, Search, LogOut, Package, Menu, X } from 'lucide-react'
+import { LayoutDashboard, Users, Car, Wrench, FileText, Search, LogOut, Package, Menu, X, AlertTriangle } from 'lucide-react'
 import Dashboard from './components/Dashboard'
 import Clientes from './components/Clientes'
 import Vehiculos from './components/Vehiculos'
@@ -24,23 +24,75 @@ function App() {
   // Estado del menú móvil
   const [menuAbierto, setMenuAbierto] = useState(false)
 
+  // Estados para la alerta flotante de inventario
+  const [stockCriticoAlerta, setStockCriticoAlerta] = useState([])
+  const [mostrarAlertaStock, setMostrarAlertaStock] = useState(false)
+
   // 3. Efecto: Guarda 'vistaActual' en LocalStorage cuando cambia
   useEffect(() => {
     localStorage.setItem('vistaAutoAdmin', vistaActual)
   }, [vistaActual])
 
-  // 4. Función para cerrar sesión y limpiar LocalStorage
+  // 4. Efecto: Sincroniza el botón "Atrás" del navegador con las vistas
+  useEffect(() => {
+    if (!user) return
+
+    window.history.replaceState({ vista: vistaActual }, '')
+
+    const manejarRetroceso = (event) => {
+      if (event.state?.vista) {
+        setVistaActual(event.state.vista)
+        setMenuAbierto(false)
+      }
+    }
+
+    window.addEventListener('popstate', manejarRetroceso)
+    return () => window.removeEventListener('popstate', manejarRetroceso)
+  }, [user])
+
+  // 5. Efecto: Verifica stock crítico una vez por sesión al iniciar
+  useEffect(() => {
+    if (!user) return
+    if (sessionStorage.getItem('alertaStockVista') === 'true') return
+
+    const verificarStockCritico = async () => {
+      try {
+        const res = await fetch('/api/inventario')
+        if (!res.ok) return
+        const data = await res.json()
+        if (!Array.isArray(data)) return
+
+        const criticos = data.filter(item => Number(item.stock) <= Number(item.min))
+        if (criticos.length > 0) {
+          setStockCriticoAlerta(criticos)
+          setMostrarAlertaStock(true)
+          sessionStorage.setItem('alertaStockVista', 'true')
+        }
+      } catch (error) {
+        console.error('Error verificando stock crítico:', error)
+      }
+    }
+
+    verificarStockCritico()
+  }, [user])
+
+  // 6. Función para cerrar sesión y limpiar LocalStorage / SessionStorage
   const handleLogout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     localStorage.removeItem('vistaAutoAdmin')
+    sessionStorage.removeItem('alertaStockVista')
+    setMostrarAlertaStock(false)
     setVistaActual('Panel principal')
     setMenuAbierto(false)
     setUser(null)
   }
 
   const seleccionarVista = (nombre) => {
-    setVistaActual(nombre)
+    if (nombre !== vistaActual) {
+      window.history.pushState({ vista: nombre }, '')
+      setVistaActual(nombre)
+    }
     setMenuAbierto(false)
   }
 
@@ -171,7 +223,7 @@ function App() {
 
       {/* Área principal */}
       <main className="main-content">
-        {vistaActual === 'Panel principal' && <Dashboard setVistaActual={setVistaActual} />}
+        {vistaActual === 'Panel principal' && <Dashboard setVistaActual={seleccionarVista} />}
         {vistaActual === 'Clientes' && <Clientes />}
         {vistaActual === 'Vehículos' && <Vehiculos />}
         {vistaActual === 'Órdenes de trabajo' && <OrdenesTrabajo />}
@@ -179,6 +231,133 @@ function App() {
         {vistaActual === 'Consulta por patente' && <ConsultaPatente />}
         {vistaActual === 'Inventario' && <Inventario />}
       </main>
+
+      {/* Notificación Flotante (Toast) de Stock Crítico */}
+      {mostrarAlertaStock && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            width: 'calc(100% - 32px)',
+            maxWidth: '370px',
+            backgroundColor: 'var(--bg-card)',
+            border: '1px solid #fecaca',
+            borderLeft: '4px solid #dc2626',
+            borderRadius: '12px',
+            padding: '16px',
+            boxShadow: '0 12px 28px rgba(15, 23, 42, 0.18)',
+            zIndex: 1100
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '8px',
+                backgroundColor: '#fee2e2',
+                color: '#dc2626',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <AlertTriangle size={18} />
+              </div>
+              <div>
+                <div style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-main)' }}>
+                  Stock crítico detectado
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                  {stockCriticoAlerta.length} {stockCriticoAlerta.length === 1 ? 'repuesto bajo' : 'repuestos bajo'} el mínimo
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setMostrarAlertaStock(false)}
+              aria-label="Cerrar alerta"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-muted)',
+                cursor: 'pointer',
+                padding: '2px',
+                display: 'flex'
+              }}
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
+            {stockCriticoAlerta.slice(0, 3).map((item, idx) => (
+              <div
+                key={item.id_repuesto || idx}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontSize: '12px',
+                  padding: '6px 10px',
+                  borderRadius: '6px',
+                  backgroundColor: '#fef2f2',
+                  color: '#991b1b'
+                }}
+              >
+                <span style={{ fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: '8px' }}>
+                  {item.nombre}
+                </span>
+                <span style={{ fontWeight: '700', whiteSpace: 'nowrap' }}>
+                  {item.stock} / {item.min}
+                </span>
+              </div>
+            ))}
+            {stockCriticoAlerta.length > 3 && (
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'right' }}>
+                +{stockCriticoAlerta.length - 3} repuestos más
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+            <button
+              onClick={() => setMostrarAlertaStock(false)}
+              style={{
+                backgroundColor: 'transparent',
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-main)',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: '600',
+                cursor: 'pointer'
+              }}
+            >
+              Cerrar
+            </button>
+            <button
+              onClick={() => {
+                setMostrarAlertaStock(false)
+                seleccionarVista('Inventario')
+              }}
+              style={{
+                backgroundColor: '#dc2626',
+                border: 'none',
+                color: 'white',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: '600',
+                cursor: 'pointer'
+              }}
+            >
+              Ver inventario
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
