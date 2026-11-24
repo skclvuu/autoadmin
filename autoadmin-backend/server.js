@@ -44,7 +44,12 @@ app.get('/api/mecanicos', async (req, res) => {
 
 app.get('/api/inventario', async (req, res) => {
   try {
-    const result = await db.query('SELECT * FROM repuesto ORDER BY id_repuesto ASC');
+    const result = await db.query(`
+      SELECT * FROM repuesto
+      ORDER BY (CASE WHEN stock_actual <= stock_minimo THEN 0 ELSE 1 END) ASC,
+               stock_actual ASC,
+               id_repuesto ASC
+    `);
     
     const inventario = result.rows.map(item => {
       const stock = parseFloat(item.stock_actual);
