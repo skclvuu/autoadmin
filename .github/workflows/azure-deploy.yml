@@ -1,41 +1,34 @@
-name: Deploy AutoAdmin a Azure App Service
+
+name: Prueba conexion AutoAdmin Azure
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
-env:
-  AZURE_WEBAPP_NAME: CAMBIAR-por-el-nombre-de-tu-app-service
-  NODE_VERSION: '24.x'
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
-  build-and-deploy:
+  test-azure:
+    if: github.ref == 'refs/heads/azure-test'
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
+      - name: Autenticacion OIDC con Azure
+        uses: azure/login@v2
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Compilar frontend (React + Vite)
-        working-directory: autoadmin-front
+      - name: Verificar Azure App Service
         run: |
-          npm ci
-          npm run build
+          az webapp show \
+            --resource-group AutoAdmin-RG \
+            --name autoadmin-web \
+            --query "{nombre:name,estado:state}" \
+            --output table
 
-      - name: Copiar el build al backend
-        run: |
-          rm -rf autoadmin-backend/public
-          cp -r autoadmin-front/dist autoadmin-backend/public
-
-      - name: Instalar dependencias de produccion del backend
-        working-directory: autoadmin-backend
-        run: npm ci --omit=dev
-
-      - name: Desplegar en Azure App Service
-        uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
