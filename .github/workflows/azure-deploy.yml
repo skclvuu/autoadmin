@@ -22,14 +22,4 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Verificar Azure App Service
-        run: |
-          az webapp show \
-            --resource-group AutoAdmin-RG \
-            --name autoadmin-web \
-            --query "{nombre:name,estado:state}" \
-            --output table
-
-        with:
-          app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: autoadmin-backend
+        run: az webapp show --resource-group AutoAdmin-RG --name autoadmin-web --query "{nombre:name,estado:state}" --output table
